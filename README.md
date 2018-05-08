@@ -10,6 +10,7 @@ Simulate GNSS signals. Currently it only provides pseudo post correlation signal
   * Steering vectors
   * Attitude
  * Pseudo satellite amplitude and phase
+ * All values can vary be setting a standard deviation > 0 for each parameter
 
 ## Getting started
 
@@ -28,6 +29,21 @@ measurement = init_measurement(init_measurement(
         sat_doa_carts,
         get_steer_vec)
 ```
+
+## Todo
+
+This is still missing:
+
+* DOA calculation based on absolute time and NMEA
+* PRN simulation (currently it only provides a random post correlation signal for each satellite)
+* Multipath
+* Jammer
+* Spoofer
+
+## Would be nice to have
+
+* Attitude and trajectory simulation based on Google API
+* Multipath simulation based on Google API
 
 ## License
 
