@@ -86,18 +86,18 @@ function init_gen_gain_and_phase_mism_and_crosstalk(
         crosstalk_phase_over_time_std
     )
 
-    init_phase_mism = randn(num_ants) * init_phase_mism_betw_ant_std * π / 180
-    init_gain_mism = randn(num_ants) * init_gain_mism_betw_ant_std
+    init_phase_mism = randn(num_ants) * init_phase_mism_betw_ant_std
+    init_gain_mism = ones(num_ants) + randn(num_ants) * init_gain_mism_betw_ant_std
 
     init_crosstalk_ampl = (ones(num_ants, num_ants) + randn(num_ants, num_ants) * init_crosstalk_ampl_std) .*
         (ones(num_ants, num_ants) - eye(num_ants)) * 10^(init_crosstalk_to_direct_power_dB / 10)
     init_crosstalk_phase = randn(num_ants, num_ants) * init_crosstalk_phase_std
 
     t -> begin
-        phase_mism = init_phase_mism + randn(num_ants) * phase_mism_over_time_std * π / 180
+        phase_mism = init_phase_mism + randn(num_ants) * phase_mism_over_time_std
         gain_mism = init_gain_mism + randn(num_ants) * gain_mism_over_time_std
         gain_and_phase_mism = gain_mism .* cis.(phase_mism)
-        crosstalk_phase = init_crosstalk_phase + randn(num_ants, num_ants) * crosstalk_phase_over_time_std * π / 180
+        crosstalk_phase = init_crosstalk_phase + randn(num_ants, num_ants) * crosstalk_phase_over_time_std
         crosstalk_ampl = init_crosstalk_ampl + randn(num_ants, num_ants) * crosstalk_ampl_over_time_std .* (ones(num_ants, num_ants) - eye(num_ants))
         crosstalk = crosstalk_ampl .* cis.(crosstalk_phase)
 
@@ -135,6 +135,6 @@ function init_gen_attitude(
     )
     t -> begin
         index = floor(Int, t * attitude_sample_freq) + 1
-        RotXYZ(attitude_over_time[:,index]...) * RotXYZ(randn(SVector{3}) * attitude_over_time_std * π / 180...)
+        RotXYZ(attitude_over_time[:,index]...) * RotXYZ(randn(SVector{3}) * attitude_over_time_std...)
     end
 end
