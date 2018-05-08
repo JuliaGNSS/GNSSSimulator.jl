@@ -1,44 +1,34 @@
-![Example Pattern](assets/example_pattern.png)
-# PhasedArray.jl
-This module provides common functions associated with antenna arrays.
-Currently it provides the creation of antenna array manifolds of ideal antennas and / or of measured steering vectors based on Look-up-Tables (LUT). Moreover it provides some nice plotting functionality.
+[![pipeline status](https://git.rwth-aachen.de/nav/GNSSSimulator.jl/badges/master/pipeline.svg)](https://git.rwth-aachen.de/nav/GNSSSimulator.jl/commits/master)
+# GNSSSimulator
+Simulate GNSS signals. Currently it only provides pseudo post correlation signals.
 
 ## Features
 
- * Easy access to antenna array manifolds either ideal or real
- * Various plots
+ * Phased array simulation:
+  * Gain and phase mismatches
+  * Crosstalk effects
+  * Steering vectors
+  * Attitude
+ * Pseudo satellite amplitude and phase
 
 ## Getting started
 
 Install:
-```
-Pkg.clone("git@git.rwth-aachen.de:nav/PhasedArray.jl.git")
+```julia
+Pkg.clone("git@git.rwth-aachen.de:nav/GNSSSimulator.jl.git")
 ```
 
 ## Usage
 
-```
-using PhasedArray
-using StaticArrays
-ant_pos = 0.1904 / 4 * [1 -1 1 -1; 1 1 -1 -1; 0 0 0 0]
-get_steer_vec = manifold(ant_pos, 1575420e3)
-example_steer_vec = get_steer_vec(SVector(0,0,1))
-plot_pattern_3D(get_steer_vec)
+```julia
+using GNSSSimulator
+measurement = init_measurement(init_measurement(
+        attitudes,
+        existing_sats,
+        sat_doa_carts,
+        get_steer_vec)
 ```
 
-or based on a LUT:
-
-```
-using PhasedArray
-using StaticArrays
-using MAT
-file = matopen("example_LUT.mat")
-lut = read(file,"LUT_name")
-close(file)
-get_steer_vec = manifold(lut)
-example_steer_vec = get_steer_vec(SVector(0,0,1))
-plot_pattern_3D(get_steer_vec)
-```
 ## License
 
 MIT License

@@ -1,6 +1,6 @@
 module GNSSSimulator
 
-  using CoordinateTransformations, StaticArrays, Rotations, PhasedArray
+  using CoordinateTransformations, StaticArrays, Rotations
   import Base.transpose
 
   export init_measurement
