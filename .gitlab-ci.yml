@@ -1,0 +1,14 @@
+image: julia:0.6
+
+before_script:
+  - apt-get update && apt-get -y install python-dev python-matplotlib openssh-client
+  - eval $(ssh-agent -s)
+  - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+  - julia -e 'Pkg.clone("git@git.rwth-aachen.de:nav/PhasedArray.jl.git")'
+  - mkdir ~/.julia && mkdir ~/.julia/v0.6 && ln -s $PWD ~/.julia/v0.6/GNSSSymulator
+
+testjob:
+  script:
+    - julia -e 'Pkg.test("GNSSSimulator")'
