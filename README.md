@@ -10,7 +10,7 @@ Simulate GNSS signals. Currently it only provides pseudo post correlation signal
   * Steering vectors
   * Attitude
  * Pseudo satellite amplitude and phase
- * All values can vary be setting a standard deviation > 0 for each parameter
+ * Standard deviation for variation over time
 
 ## Getting started
 
