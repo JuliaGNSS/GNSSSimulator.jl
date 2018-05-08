@@ -40,7 +40,7 @@ This is still missing:
 * Jammer
 * Spoofer
 
-## Would be nice to have
+## Nice to have
 
 * Attitude and trajectory simulation based on Google API
 * Multipath simulation based on Google API
