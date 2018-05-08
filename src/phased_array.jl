@@ -21,7 +21,7 @@ function init_measurement(
     )
 
     num_ants = size(get_steer_vec(Spherical(SVector(0.0,0.0,1.0))), 1)
-    max_num_sats = size(existing_sats, 1)
+    max_num_sats = size(existing_sats.data, 1)
 
     gen_gain_and_phase_mism_and_crosstalk = init_gen_gain_and_phase_mism_and_crosstalk(
         num_ants,

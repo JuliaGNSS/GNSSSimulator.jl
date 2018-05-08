@@ -72,3 +72,39 @@ end
     gen_steering_vectors = GNSSSimulator.init_gen_steering_vectors(a -> [a.ϕ;a.ϕ;a.θ;a.θ])
     @test gen_steering_vectors(0, attitude, doas) ≈ [0.0 π / 2; 0.0 π / 2; π 0.0; π 0.0]
 end
+
+@testset "Measurement" begin
+    attitude = [20; 10; 120] * π / 180
+    temp_attitude = GNSSSimulator.TemporalData(attitude, 1)
+    num_sats = 2
+    doas = zeros(3,num_sats, 2)
+    doas[:,1,1] = [1;0;0]
+    doas[:,1,2] = [0;1;0]
+    temp_doas = GNSSSimulator.TemporalData(doas, 2)
+    existing_sats = [true true; true true]
+    temp_existing_sats = GNSSSimulator.TemporalData(existing_sats, 2)
+
+    measurement = GNSSSimulator.init_measurement(
+        temp_attitude,
+        temp_existing_sats,
+        temp_doas,
+        a -> [1;1;1;1];
+        SNR_dB = 15,
+        init_phase_mism_betw_ant_std = 0,
+        phase_mism_over_time_std = 0,
+        init_gain_mism_betw_ant_std = 0,
+        gain_mism_over_time_std = 0,
+        init_crosstalk_to_direct_power_dB = -15,
+        init_crosstalk_ampl_std = 0,
+        init_crosstalk_phase_std = 0,
+        crosstalk_ampl_over_time_std = 0,
+        crosstalk_phase_over_time_std = 0,
+        attitude_over_time_std = 0,
+        init_signal_ampl_std = 0,
+        init_signal_phase_std = 0,
+        signal_ampl_over_time_std = 0,
+        signal_phase_over_time_std = 0
+    )
+    𝐘, attitude, doas, 𝐀, 𝐬, 𝐂, existing_sats = measurement(0)
+    @test size(𝐘) == (4,2)
+end

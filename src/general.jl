@@ -1,6 +1,6 @@
 struct TemporalData{T}
     data::T
-    sample_freq::Float64
+    sample_freq::Int
 end
 
 function init_gen_existing_sats(
