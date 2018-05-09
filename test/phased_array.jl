@@ -105,6 +105,6 @@ end
         signal_ampl_over_time_std = 0,
         signal_phase_over_time_std = 0
     )
-    𝐘, attitude, doas, 𝐀, 𝐬, 𝐂, existing_sats = measurement(0)
+    𝐘, internal_states = measurement(0)
     @test size(𝐘) == (4,2)
 end

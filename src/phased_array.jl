@@ -1,3 +1,12 @@
+struct InternalStates
+        doas::Matrix{Float64}
+        existing_sats::Vector{Float64}
+        attitude::Matrix{Float64}
+        gain_phase_mism_crosstalk::Matrix{Complex{Float64}}
+        steering_vectors::Matrix{Complex{Float64}}
+        signal::Vector{Complex{Float64}}
+end
+
 function init_measurement(
         attitudes,
         existing_sats,
@@ -69,7 +78,8 @@ function init_measurement(
         𝐬 = gen_signal_ampl_and_phase(t, existing_sats)
         𝐍 = gen_noise(t, existing_sats)
         𝐘 = 𝐂 * (𝐀 .* 𝐬.' + 𝐍)
-        𝐘, attitude, doas, 𝐀, 𝐬, 𝐂, existing_sats
+        internal_states = InternalStates(doas, existing_sats, attitude, 𝐀, 𝐬, 𝐂)
+        𝐘, internal_states
     end
 end
 
