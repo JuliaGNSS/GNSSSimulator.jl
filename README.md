@@ -23,7 +23,7 @@ Pkg.clone("git@git.rwth-aachen.de:nav/GNSSSimulator.jl.git")
 
 ```julia
 using GNSSSimulator
-measurement = init_measurement(init_measurement(
+measurement = init_measurement(
         attitudes,
         existing_sats,
         sat_doa_carts,
