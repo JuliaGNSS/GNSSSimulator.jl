@@ -22,7 +22,9 @@ function init_measurement(
         init_crosstalk_phase_std = 2 * π,
         crosstalk_ampl_over_time_std = 0.001,
         crosstalk_phase_over_time_std = 0.1,
-        attitude_over_time_std = 1,
+        yaw_over_time_std = 10 * π / 180,
+        pitch_over_time_std = 1 * π / 180,
+        roll_over_time_std = 1 * π / 180,
         init_signal_ampl_std = 0.05,
         init_signal_phase_std = 2 * π,
         signal_ampl_over_time_std = 0.1,
@@ -55,7 +57,9 @@ function init_measurement(
     gen_attitude = init_gen_attitude(
         attitudes.data,
         attitudes.sample_freq,
-        attitude_over_time_std)
+        yaw_over_time_std,
+        pitch_over_time_std,
+        roll_over_time_std)
 
     gen_steering_vectors = init_gen_steering_vectors(get_steer_vec)
 
@@ -141,10 +145,15 @@ end
 function init_gen_attitude(
         attitude_over_time,
         attitude_sample_freq,
-        attitude_over_time_std
+        yaw_over_time_std,
+        pitch_over_time_std,
+        roll_over_time_std
     )
     t -> begin
         index = floor(Int, t * attitude_sample_freq) + 1
-        RotXYZ(attitude_over_time[:,index]...) * RotXYZ(randn(SVector{3}) * attitude_over_time_std...)
+        yaw_noise = randn() * yaw_over_time_std
+        pitch_noise = randn() * pitch_over_time_std
+        roll_noise = randn() * roll_over_time_std
+        RotXYZ(attitude_over_time[:,index]...) * RotXYZ(roll_noise, pitch_noise, yaw_noise)
     end
 end

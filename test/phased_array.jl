@@ -51,14 +51,14 @@ end
             10 11; # Pitch
             120 121 # Yaw
         ] * π / 180
-        gen_attitude = GNSSSimulator.init_gen_attitude(attitude_over_time, 10, 0)
+        gen_attitude = GNSSSimulator.init_gen_attitude(attitude_over_time, 10, 0, 0, 0)
         @test gen_attitude(0) == RotXYZ(20 * π / 180, 10 * π / 180, 120 * π / 180)
         @test gen_attitude(0.1) == RotXYZ(21 * π / 180, 11 * π / 180, 121 * π / 180)
     end
 
     @testset "Attitude over time" begin
         attitude = [20; 10; 120] * π / 180
-        gen_attitude = GNSSSimulator.init_gen_attitude(attitude, 1/10000, 1 * π / 180)
+        gen_attitude = GNSSSimulator.init_gen_attitude(attitude, 1/10000, 1 * π / 180, 1 * π / 180, 1 * π / 180)
         rots = map(t -> RotXYZ(gen_attitude(t)), 1:1000)
         attitudes = hcat(map(T -> [T.theta1, T.theta2, T.theta3], rots)...)
         @test std(attitudes, 2) ≈ [1;1;1] * π / 180 atol = 0.5 * π / 180
@@ -99,7 +99,9 @@ end
         init_crosstalk_phase_std = 0,
         crosstalk_ampl_over_time_std = 0,
         crosstalk_phase_over_time_std = 0,
-        attitude_over_time_std = 0,
+        yaw_over_time_std = 0,
+        pitch_over_time_std = 0,
+        roll_over_time_std = 0,
         init_signal_ampl_std = 0,
         init_signal_phase_std = 0,
         signal_ampl_over_time_std = 0,
