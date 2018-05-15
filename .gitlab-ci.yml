@@ -1,12 +1,11 @@
 image: julia:0.6
 
-before_script:
-  - julia -e 'Pkg.clone(pwd())'
-  - mkdir coverage
-  - apt-get update && apt-get install -y lcov
-
 testjob:
   stage: test
+  before_script:
+    - julia -e 'Pkg.clone(pwd())'
+    - mkdir coverage
+    - apt-get update && apt-get install -y lcov
   script:
     - julia -e 'Pkg.test("GNSSSimulator", coverage=true)'
   after_script:
