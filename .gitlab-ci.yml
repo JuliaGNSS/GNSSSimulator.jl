@@ -3,7 +3,7 @@ image: julia:0.6
 testjob:
   stage: test
   before_script:
-    - julia -e 'Pkg.clone(pwd())'
+    - mkdir ~/.julia && mkdir ~/.julia/v0.6 && ln -s $PWD ~/.julia/v0.6/GNSSReceiver
     - apt-get update && apt-get install -y lcov
   script:
     - julia -e 'Pkg.test("GNSSSimulator", coverage=true)'
@@ -15,14 +15,14 @@ testjob:
       run(`genhtml -t GNSSSimulator -o coverage coverage/lcov.info`)'
   artifacts:
     paths:
-      - .julia/v0.6/GNSSSimulator/coverage/
+      - coverage
 
 pages:
   stage: deploy
   dependencies:
     - testjob
   script:
-    - mv .julia/v0.6/GNSSSimulator/coverage/ public/
+    - mv coverage/ public/
   artifacts:
     paths:
       - public
