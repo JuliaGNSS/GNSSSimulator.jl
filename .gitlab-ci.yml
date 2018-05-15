@@ -22,7 +22,7 @@ pages:
   dependencies:
     - testjob
   script:
-    - mv /root/.julia/v0.6/GNSSSimulator/ public/
+    - mv /root/.julia/v0.6/GNSSSimulator/coverage/ public/
   artifacts:
     paths:
       - public
