@@ -11,7 +11,7 @@ testjob:
     - julia -e 'Pkg.test("GNSSSimulator", coverage=true)'
   after_script:
     - julia -e 'Pkg.add("Coverage"); cd(Pkg.dir("GNSSSimulator"));
-      using Coverage; cl, tl = get_summary(process_folder());
+      using Coverage; coverage = process_folder(); cl, tl = get_summary(coverage);
       println("(", cl/tl*100, "%) covered"); isdir("coverage") || mkdir("coverage");
       Coverage.LCOV.writefile("coverage/lcov.info", coverage);
       run(`genhtml -t GNSSSimulator -o ~/coverage coverage/lcov.info`)'
