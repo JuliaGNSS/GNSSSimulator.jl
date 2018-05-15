@@ -2,11 +2,32 @@ image: julia:0.6
 
 before_script:
   - julia -e 'Pkg.clone(pwd())'
+  - mkdir coverage
+  - apt-get install -y lcov
 
 testjob:
+  stage: test
   script:
     - julia -e 'Pkg.test("GNSSSimulator", coverage=true)'
   after_script:
     - julia -e 'Pkg.add("Coverage"); cd(Pkg.dir("GNSSSimulator"));
       using Coverage; cl, tl = get_summary(process_folder());
-      println("(", cl/tl*100, "%) covered")'
+      println("(", cl/tl*100, "%) covered"); isdir("coverage") || mkdir("coverage");
+      Coverage.LCOV.writefile("coverage/lcov.info", coverage);
+      run(`genhtml -t GNSSSimulator -o ~/coverage coverage/lcov.info`)'
+  artifacts:
+    paths:
+      - coverage/
+
+pages:
+  stage: deploy
+  dependencies:
+    - testjob
+  script:
+    - mv coverage/ public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  only:
+    - master
