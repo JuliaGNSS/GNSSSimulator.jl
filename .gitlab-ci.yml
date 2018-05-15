@@ -15,14 +15,14 @@ testjob:
       run(`genhtml -t GNSSSimulator -o coverage coverage/lcov.info`)'
   artifacts:
     paths:
-      - /root/.julia/v0.6/GNSSSimulator/coverage/
+      - .julia/v0.6/GNSSSimulator/coverage/
 
 pages:
   stage: deploy
   dependencies:
     - testjob
   script:
-    - mv /root/.julia/v0.6/GNSSSimulator/coverage/ public/
+    - mv .julia/v0.6/GNSSSimulator/coverage/ public/
   artifacts:
     paths:
       - public
