@@ -3,7 +3,7 @@ image: julia:0.6
 testjob:
   stage: test
   before_script:
-    - mkdir ~/.julia && mkdir ~/.julia/v0.6 && ln -s $PWD ~/.julia/v0.6/GNSSReceiver
+    - mkdir ~/.julia && mkdir ~/.julia/v0.6 && ln -s $PWD ~/.julia/v0.6/GNSSSimulator
     - apt-get update && apt-get install -y lcov
   script:
     - julia -e 'Pkg.test("GNSSSimulator", coverage=true)'
