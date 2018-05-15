@@ -3,7 +3,7 @@ image: julia:0.6
 before_script:
   - julia -e 'Pkg.clone(pwd())'
   - mkdir coverage
-  - apt-get install -y lcov
+  - apt-get update && apt-get install -y lcov
 
 testjob:
   stage: test
