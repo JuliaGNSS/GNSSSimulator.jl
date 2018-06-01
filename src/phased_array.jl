@@ -13,22 +13,22 @@ function init_measurement(
         sat_doa_carts,
         get_steer_vec;
         SNR_dB = 15,
-        init_phase_mism_betw_ant_std = π / 4,
-        phase_mism_over_time_std = 1,
-        init_gain_mism_betw_ant_std = 0.1,
-        gain_mism_over_time_std = 0.01,
+        init_phase_mism_betw_ant_std = π / 12,
+        phase_mism_over_time_std = π / 180,
+        init_gain_mism_betw_ant_std = 0.01,
+        gain_mism_over_time_std = 0.001,
         init_crosstalk_to_direct_power_dB = -15,
         init_crosstalk_ampl_std = 0.05,
         init_crosstalk_phase_std = 2 * π,
         crosstalk_ampl_over_time_std = 0.001,
-        crosstalk_phase_over_time_std = 0.1,
-        yaw_over_time_std = 10 * π / 180,
-        pitch_over_time_std = 1 * π / 180,
-        roll_over_time_std = 1 * π / 180,
+        crosstalk_phase_over_time_std = 0.1 * π / 180,
+        yaw_over_time_std = 0.1 * π / 180,
+        pitch_over_time_std = 0.01 * π / 180,
+        roll_over_time_std = 0.01 * π / 180,
         init_signal_ampl_std = 0.05,
         init_signal_phase_std = 2 * π,
-        signal_ampl_over_time_std = 0.1,
-        signal_phase_over_time_std = 0.5
+        signal_ampl_over_time_std = 0.01,
+        signal_phase_over_time_std = 0.5 * π / 180
     )
 
     num_ants = size(get_steer_vec(Spherical(SVector(0.0,0.0,1.0))), 1)
@@ -48,7 +48,6 @@ function init_measurement(
 
     gen_signal_ampl_and_phase = init_gen_signal_ampl_and_phase(
         max_num_sats,
-        SNR_dB,
         init_signal_ampl_std,
         init_signal_phase_std,
         signal_ampl_over_time_std,
@@ -71,20 +70,22 @@ function init_measurement(
         existing_sats.data,
         existing_sats.sample_freq)
 
-    gen_noise = init_gen_noise(num_ants)
+    gen_noise = init_gen_noise(-SNR_dB, num_ants)
 
-    t -> begin
-        existing_sats = gen_existing_sats(t)
-        attitude = gen_attitude(t)
-        doas = gen_doas(t, existing_sats)
-        𝐀 = gen_steering_vectors(t, attitude, doas)
-        𝐂 = gen_gain_and_phase_mism_and_crosstalk(t)
-        𝐬 = gen_signal_ampl_and_phase(t, existing_sats)
-        𝐍 = gen_noise(t, existing_sats)
-        𝐘 = 𝐂 * (𝐀 .* 𝐬.' + 𝐍)
-        internal_states = InternalStates(doas, existing_sats, attitude, 𝐂, 𝐀, 𝐬)
-        𝐘, internal_states
-    end
+    t -> _measurement(t, gen_existing_sats, gen_attitude, gen_doas, gen_steering_vectors, gen_gain_and_phase_mism_and_crosstalk, gen_signal_ampl_and_phase, gen_noise)
+end
+
+function _measurement(t, gen_existing_sats, gen_attitude, gen_doas, gen_steering_vectors, gen_gain_and_phase_mism_and_crosstalk, gen_signal_ampl_and_phase, gen_noise)
+    existing_sats = gen_existing_sats(t)
+    attitude = gen_attitude(t)
+    doas = gen_doas(t, existing_sats)
+    𝐀 = gen_steering_vectors(t, attitude, doas)
+    𝐂 = gen_gain_and_phase_mism_and_crosstalk(t)
+    𝐬 = gen_signal_ampl_and_phase(t, existing_sats)
+    𝐍 = gen_noise(t, existing_sats)
+    𝐘::Array{Complex{Float64}, 2} = 𝐂 * (𝐀 .* 𝐬.' + 𝐍)
+    internal_states = InternalStates(doas, existing_sats, attitude, 𝐂, 𝐀, 𝐬)
+    𝐘, internal_states
 end
 
 function init_gen_gain_and_phase_mism_and_crosstalk(
@@ -120,7 +121,7 @@ function init_gen_gain_and_phase_mism_and_crosstalk(
 end
 
 function normalize_gain_and_phase_mism_and_crosstalk(gain_and_phase_mism_and_crosstalk)
-    gain_and_phase_mism_and_crosstalk_norm = mapslices(norm, gain_and_phase_mism_and_crosstalk, 1)
+    gain_and_phase_mism_and_crosstalk_norm = map(norm, julienne(gain_and_phase_mism_and_crosstalk, (:,*)))'
     gain_and_phase_mism_and_crosstalk ./ gain_and_phase_mism_and_crosstalk_norm
 end
 
@@ -138,7 +139,7 @@ function init_gen_steering_vectors(
         get_steer_vec
     )
     (t, attitude, doas) -> begin
-        mapslices(doa -> get_steer_vec(Spherical(attitude * doa)), doas, 1)
+        hcat(map(get_steer_vec, julienne(attitude * doas, (:,*)))...)
     end
 end
 
@@ -154,6 +155,7 @@ function init_gen_attitude(
         yaw_noise = randn() * yaw_over_time_std
         pitch_noise = randn() * pitch_over_time_std
         roll_noise = randn() * roll_over_time_std
-        RotXYZ(attitude_over_time[:,index]...) * RotXYZ(roll_noise, pitch_noise, yaw_noise)
+        curr_att = attitude_over_time[:,index]
+        RotXYZ(curr_att[1] + roll_noise, curr_att[2] + pitch_noise, curr_att[3] + yaw_noise)
     end
 end

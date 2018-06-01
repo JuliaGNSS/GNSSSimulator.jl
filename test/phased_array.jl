@@ -4,9 +4,9 @@
 
     @testset "Crosstalk amplitude" begin
         crosstalk_dB = -10
-        gen_gp_mism_crosstalk = GNSSSimulator.init_gen_gain_and_phase_mism_and_crosstalk(2, 0, 0, 0, 0, crosstalk_dB, 0, 0, 0, 0)
+        gen_gp_mism_crosstalk = @inferred GNSSSimulator.init_gen_gain_and_phase_mism_and_crosstalk(2, 0, 0, 0, 0, crosstalk_dB, 0, 0, 0, 0)
 
-        gp_mism_crosstalk = gen_gp_mism_crosstalk(0)
+        gp_mism_crosstalk = @inferred gen_gp_mism_crosstalk(0)
 
         @test abs(gp_mism_crosstalk[1,1]) == abs(gp_mism_crosstalk[2,2])
         @test abs(gp_mism_crosstalk[1,1]) * 10^(crosstalk_dB / 10) ≈ abs(gp_mism_crosstalk[1,2])
@@ -14,17 +14,17 @@
     end
 
     @testset "Gain" begin
-        gen_gp_mism_crosstalk = GNSSSimulator.init_gen_gain_and_phase_mism_and_crosstalk(2, 0, 0, 0, 0, -Inf, 0, 0, 0, 0)
+        gen_gp_mism_crosstalk = @inferred GNSSSimulator.init_gen_gain_and_phase_mism_and_crosstalk(2, 0, 0, 0, 0, -Inf, 0, 0, 0, 0)
 
-        gp_mism_crosstalk = gen_gp_mism_crosstalk(0)
+        gp_mism_crosstalk = @inferred gen_gp_mism_crosstalk(0)
 
         @test abs(gp_mism_crosstalk[1,1]) == abs(gp_mism_crosstalk[2,2])
         @test abs(gp_mism_crosstalk[1,1]) == 1
     end
 
     @testset "Normalization" begin
-        normed_matrix = GNSSSimulator.normalize_gain_and_phase_mism_and_crosstalk(ones(4,4))
-        @test mapslices(norm, normed_matrix, 1) == [1.0 1.0 1.0 1.0]
+        normed_matrix = @inferred GNSSSimulator.normalize_gain_and_phase_mism_and_crosstalk(ones(4,4))
+        @test map(norm, julienne(normed_matrix, (:,*))) == [1.0, 1.0, 1.0, 1.0]
     end
 end
 
@@ -34,13 +34,13 @@ end
     doas = zeros(3,num_sats,num_timestamps)
     doas[:,1,1] = [1;0;0]
     doas[:,1,2] = [0;1;0]
-    gen_doas = GNSSSimulator.init_gen_doas(doas, 10)
+    gen_doas = @inferred GNSSSimulator.init_gen_doas(doas, 10)
 
-    @test gen_doas(0.0, trues(2)) == [1 0;0 0;0 0]
-    @test gen_doas(0.1, trues(2)) == [0 0;1 0;0 0]
+    @test @inferred gen_doas(0.0, trues(2)) == [1 0;0 0;0 0]
+    @test @inferred gen_doas(0.1, trues(2)) == [0 0;1 0;0 0]
 
-    @test gen_doas(0.0, [true; false]) ≈ [1;0;0]
-    @test gen_doas(0.1, [true; false]) ≈ [0;1;0]
+    @test @inferred gen_doas(0.0, [true; false]) ≈ [1;0;0]
+    @test @inferred gen_doas(0.1, [true; false]) ≈ [0;1;0]
 end
 
 @testset "Attitude" begin
@@ -51,15 +51,15 @@ end
             10 11; # Pitch
             120 121 # Yaw
         ] * π / 180
-        gen_attitude = GNSSSimulator.init_gen_attitude(attitude_over_time, 10, 0, 0, 0)
-        @test gen_attitude(0) == RotXYZ(20 * π / 180, 10 * π / 180, 120 * π / 180)
-        @test gen_attitude(0.1) == RotXYZ(21 * π / 180, 11 * π / 180, 121 * π / 180)
+        gen_attitude = @inferred GNSSSimulator.init_gen_attitude(attitude_over_time, 10, 0, 0, 0)
+        @test @inferred gen_attitude(0) ≈ RotXYZ(20 * π / 180, 10 * π / 180, 120 * π / 180)
+        @test @inferred gen_attitude(0.1) ≈ RotXYZ(21 * π / 180, 11 * π / 180, 121 * π / 180)
     end
 
     @testset "Attitude over time" begin
         attitude = [20; 10; 120] * π / 180
-        gen_attitude = GNSSSimulator.init_gen_attitude(attitude, 1/10000, 1 * π / 180, 1 * π / 180, 1 * π / 180)
-        rots = map(t -> RotXYZ(gen_attitude(t)), 1:1000)
+        gen_attitude = @inferred GNSSSimulator.init_gen_attitude(attitude, 1/10000, 1 * π / 180, 1 * π / 180, 1 * π / 180)
+        rots = map(t -> RotXYZ(@inferred gen_attitude(t)), 1:1000)
         attitudes = hcat(map(T -> [T.theta1, T.theta2, T.theta3], rots)...)
         @test std(attitudes, 2) ≈ [1;1;1] * π / 180 atol = 0.5 * π / 180
     end
@@ -69,8 +69,8 @@ end
 
     doas = [1 0; 0 0; 0 1]
     attitude = RotXYZ(0.0, 0.0, 1.0 * π)
-    gen_steering_vectors = GNSSSimulator.init_gen_steering_vectors(a -> [a.ϕ;a.ϕ;a.θ;a.θ])
-    @test gen_steering_vectors(0, attitude, doas) ≈ [0.0 π / 2; 0.0 π / 2; π 0.0; π 0.0]
+    gen_steering_vectors = @inferred GNSSSimulator.init_gen_steering_vectors(a -> [a[1], a[1], a[2], a[3]])
+    @test @inferred gen_steering_vectors(0, attitude, doas) ≈ [-1.0 0.0; -1.0 0.0; 0.0 0.0; 0.0 1.0]
 end
 
 @testset "Measurement" begin
@@ -107,6 +107,6 @@ end
         signal_ampl_over_time_std = 0,
         signal_phase_over_time_std = 0
     )
-    𝐘, internal_states = measurement(0)
+    𝐘, internal_states = @inferred measurement(0)
     @test size(𝐘) == (4,2)
 end

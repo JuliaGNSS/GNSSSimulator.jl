@@ -15,7 +15,6 @@ end
 
 function init_gen_signal_ampl_and_phase(
         max_num_sats,
-        SNR_dB,
         init_signal_ampl_std,
         init_signal_phase_std,
         signal_ampl_over_time_std,
@@ -24,7 +23,7 @@ function init_gen_signal_ampl_and_phase(
 
     init_signal_phase = randn(max_num_sats) * init_signal_phase_std
     init_signal_ampl = ones(max_num_sats) + randn(max_num_sats) * init_signal_ampl_std
-    amplitude = 10^(SNR_dB / 20)
+    amplitude = 1
     (t, existing_sats) -> begin
         signal_phase = init_signal_phase + randn(max_num_sats) * signal_phase_over_time_std
         signal_ampl = init_signal_ampl + randn(max_num_sats) * signal_ampl_over_time_std
@@ -32,9 +31,10 @@ function init_gen_signal_ampl_and_phase(
     end
 end
 
-function init_gen_noise(num_ants = 1)
+function init_gen_noise(noise_power_dB, num_ants = 1)
+    amplitude = 10^(noise_power_dB / 20)
     (t, existing_sats) -> begin
         num_sats = sum(existing_sats)
-        complex.(randn(num_ants, num_sats), randn(num_ants, num_sats)) / sqrt(2)
+        complex.(randn(num_ants, num_sats), randn(num_ants, num_sats)) / sqrt(2) * amplitude
     end
 end
