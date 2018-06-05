@@ -4,3 +4,4 @@ CoordinateTransformations
 Rotations
 StaticArrays
 JuliennedArrays
+DocStringExtensions

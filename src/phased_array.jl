@@ -7,155 +7,94 @@ struct InternalStates
         signal::Vector{Complex{Float64}}
 end
 
-function init_measurement(
-        attitudes,
-        existing_sats,
-        sat_doa_carts,
-        get_steer_vec;
-        SNR_dB = 15,
-        init_phase_mism_betw_ant_std = π / 12,
-        phase_mism_over_time_std = π / 180,
-        init_gain_mism_betw_ant_std = 0.01,
-        gain_mism_over_time_std = 0.001,
-        init_crosstalk_to_direct_power_dB = -15,
-        init_crosstalk_ampl_std = 0.05,
-        init_crosstalk_phase_std = 2 * π,
-        crosstalk_ampl_over_time_std = 0.001,
-        crosstalk_phase_over_time_std = 0.1 * π / 180,
-        yaw_over_time_std = 0.1 * π / 180,
-        pitch_over_time_std = 0.01 * π / 180,
-        roll_over_time_std = 0.01 * π / 180,
-        init_signal_ampl_std = 0.05,
-        init_signal_phase_std = 2 * π,
-        signal_ampl_over_time_std = 0.01,
-        signal_phase_over_time_std = 0.5 * π / 180
+"""
+$(SIGNATURES)
+
+Simulates post correlation measurement. It depends on several functions:
+`sim_existing_sat` which provides a boolean array of existing sats over time `t`,
+`sim_post_corr_signal` which provides an array of post correlation signals over 
+time `t` for current `existing_sats`, `sim_attitude` which provides the attitude
+over time `t`, `sim_doas` which provides the direction of arrival over time `t` for 
+current `existing_sats`, `sim_gain_phase_mism_and_crosstalk` which provides the gain
+and phase mismatch and crosstalk matrix over time `t`, `sim_steering_vectors` which
+provides the steering vectors over time `t` for the current `attitude` and `doas`,
+and `sim_noise` which provides the noise over time `t`
+
+"""
+function sim_post_corr_measurement(
+        sim_existing_sats,
+        sim_post_corr_signal,
+        sim_attitude,
+        sim_doas,
+        sim_gain_phase_mism_and_crosstalk,
+        sim_steering_vectors,
+        sim_noise
     )
-
-    num_ants = size(get_steer_vec(Spherical(SVector(0.0,0.0,1.0))), 1)
-    max_num_sats = size(existing_sats.data, 1)
-
-    gen_gain_and_phase_mism_and_crosstalk = init_gen_gain_and_phase_mism_and_crosstalk(
-        num_ants,
-        init_phase_mism_betw_ant_std,
-        phase_mism_over_time_std,
-        init_gain_mism_betw_ant_std,
-        gain_mism_over_time_std,
-        init_crosstalk_to_direct_power_dB,
-        init_crosstalk_ampl_std,
-        init_crosstalk_phase_std,
-        crosstalk_ampl_over_time_std,
-        crosstalk_phase_over_time_std)
-
-    gen_signal_ampl_and_phase = init_gen_signal_ampl_and_phase(
-        max_num_sats,
-        init_signal_ampl_std,
-        init_signal_phase_std,
-        signal_ampl_over_time_std,
-        signal_phase_over_time_std)
-
-    gen_attitude = init_gen_attitude(
-        attitudes.data,
-        attitudes.sample_freq,
-        yaw_over_time_std,
-        pitch_over_time_std,
-        roll_over_time_std)
-
-    gen_steering_vectors = init_gen_steering_vectors(get_steer_vec)
-
-    gen_doas = init_gen_doas(
-        sat_doa_carts.data,
-        sat_doa_carts.sample_freq)
-
-    gen_existing_sats = init_gen_existing_sats(
-        existing_sats.data,
-        existing_sats.sample_freq)
-
-    gen_noise = init_gen_noise(-SNR_dB, num_ants)
-
-    t -> _measurement(t, gen_existing_sats, gen_attitude, gen_doas, gen_steering_vectors, gen_gain_and_phase_mism_and_crosstalk, gen_signal_ampl_and_phase, gen_noise)
-end
-
-function _measurement(t, gen_existing_sats, gen_attitude, gen_doas, gen_steering_vectors, gen_gain_and_phase_mism_and_crosstalk, gen_signal_ampl_and_phase, gen_noise)
-    existing_sats = gen_existing_sats(t)
-    attitude = gen_attitude(t)
-    doas = gen_doas(t, existing_sats)
-    𝐀 = gen_steering_vectors(t, attitude, doas)
-    𝐂 = gen_gain_and_phase_mism_and_crosstalk(t)
-    𝐬 = gen_signal_ampl_and_phase(t, existing_sats)
-    𝐍 = gen_noise(t, existing_sats)
-    𝐘::Array{Complex{Float64}, 2} = 𝐂 * (𝐀 .* 𝐬.' + 𝐍)
-    internal_states = InternalStates(doas, existing_sats, attitude, 𝐂, 𝐀, 𝐬)
-    𝐘, internal_states
-end
-
-function init_gen_gain_and_phase_mism_and_crosstalk(
-        num_ants,
-        init_phase_mism_betw_ant_std,
-        phase_mism_over_time_std,
-        init_gain_mism_betw_ant_std,
-        gain_mism_over_time_std,
-        init_crosstalk_to_direct_power_dB,
-        init_crosstalk_ampl_std,
-        init_crosstalk_phase_std,
-        crosstalk_ampl_over_time_std,
-        crosstalk_phase_over_time_std
-    )
-
-    init_phase_mism = randn(num_ants) * init_phase_mism_betw_ant_std
-    init_gain_mism = ones(num_ants) + randn(num_ants) * init_gain_mism_betw_ant_std
-
-    init_crosstalk_ampl = (ones(num_ants, num_ants) + randn(num_ants, num_ants) * init_crosstalk_ampl_std) .*
-        (ones(num_ants, num_ants) - eye(num_ants)) * 10^(init_crosstalk_to_direct_power_dB / 10)
-    init_crosstalk_phase = randn(num_ants, num_ants) * init_crosstalk_phase_std
 
     t -> begin
-        phase_mism = init_phase_mism + randn(num_ants) * phase_mism_over_time_std
-        gain_mism = init_gain_mism + randn(num_ants) * gain_mism_over_time_std
-        gain_and_phase_mism = gain_mism .* cis.(phase_mism)
-        crosstalk_phase = init_crosstalk_phase + randn(num_ants, num_ants) * crosstalk_phase_over_time_std
-        crosstalk_ampl = init_crosstalk_ampl + randn(num_ants, num_ants) * crosstalk_ampl_over_time_std .* (ones(num_ants, num_ants) - eye(num_ants))
-        crosstalk = crosstalk_ampl .* cis.(crosstalk_phase)
-
-        normalize_gain_and_phase_mism_and_crosstalk(diagm(gain_and_phase_mism) + crosstalk)
+        existing_sats = sim_existing_sats(t)
+        attitude = sim_attitude(t)
+        doas = sim_doas(t, existing_sats)
+        𝐀 = sim_steering_vectors(t, attitude, doas)
+        𝐂 = sim_gain_phase_mism_and_crosstalk(t)
+        𝐬 = sim_post_corr_signal(t, existing_sats)
+        𝐍 = sim_noise(t, existing_sats)
+        𝐘 = 𝐂 * (𝐀 .* 𝐬.' + 𝐍)
+        internal_states = InternalStates(doas, existing_sats, attitude, 𝐂, 𝐀, 𝐬)
+        𝐘, internal_states
     end
 end
 
-function normalize_gain_and_phase_mism_and_crosstalk(gain_and_phase_mism_and_crosstalk)
+"""
+$(SIGNATURES)
+
+Simulates gain and phase mismatch and crosstalk. Returns a function which depends on time `t`.
+
+"""
+function sim_gain_phase_mism_and_crosstalk(
+        num_ants, 
+        init_crosstalk_to_direct_power_dB,
+        init_phase_mism_betw_ant_var = π / 2,
+        init_gain_mism_betw_ant_var = 0.1,
+        init_crosstalk_phase_var = π,
+        init_crosstalk_ampl_var = init_gain_mism_betw_ant_var * 10^(init_crosstalk_to_direct_power_dB / 10)
+    )
+
+    init_phase_mism = randn(num_ants) * sqrt(init_phase_mism_betw_ant_var)
+    init_gain_mism = ones(num_ants) + randn(num_ants) * sqrt(init_gain_mism_betw_ant_var)
+
+    init_crosstalk_ampl = (ones(num_ants, num_ants) + randn(num_ants, num_ants) * sqrt(init_crosstalk_ampl_var)) .*
+        (ones(num_ants, num_ants) - eye(num_ants)) * 10^(init_crosstalk_to_direct_power_dB / 10)
+    init_crosstalk_phase = randn(num_ants, num_ants) * sqrt(init_crosstalk_phase_var)
+
+    gain_and_phase_mism = init_gain_mism .* cis.(init_phase_mism)
+    crosstalk = init_crosstalk_ampl .* cis.(init_crosstalk_phase)
+    gain_phase_mism_and_crosstalk = normalize_gain_phase_mism_and_crosstalk(diagm(gain_and_phase_mism) + crosstalk)
+
+    t -> gain_phase_mism_and_crosstalk
+end
+
+"""
+$(SIGNATURES)
+
+Normalizes the gain and phase mismatch and crosstalk function so that the norm over columns is 1.
+
+"""
+function normalize_gain_phase_mism_and_crosstalk(gain_and_phase_mism_and_crosstalk)
     gain_and_phase_mism_and_crosstalk_norm = map(norm, julienne(gain_and_phase_mism_and_crosstalk, (:,*)))'
     gain_and_phase_mism_and_crosstalk ./ gain_and_phase_mism_and_crosstalk_norm
 end
 
-function init_gen_doas(
-        sats_doa_over_time,
-        sats_doa_sample_freq
-    )
-    (t, existing_sats) -> begin
-        index = floor(Int, t * sats_doa_sample_freq) + 1
-        sats_doa_over_time[:,existing_sats,index]
-    end
-end
+"""
+$(SIGNATURES)
 
-function init_gen_steering_vectors(
-        get_steer_vec
-    )
+Simulates steering vectors over time using the given `get_steer_vec` function. It returns a function based on time,
+attitude and doas. The output type is specified because currently the splatting make it type instable:
+https://github.com/JuliaLang/julia/issues/21672
+
+"""
+function sim_steering_vectors(get_steer_vec)
     (t, attitude, doas) -> begin
-        hcat(map(get_steer_vec, julienne(attitude * doas, (:,*)))...)
-    end
-end
-
-function init_gen_attitude(
-        attitude_over_time,
-        attitude_sample_freq,
-        yaw_over_time_std,
-        pitch_over_time_std,
-        roll_over_time_std
-    )
-    t -> begin
-        index = floor(Int, t * attitude_sample_freq) + 1
-        yaw_noise = randn() * yaw_over_time_std
-        pitch_noise = randn() * pitch_over_time_std
-        roll_noise = randn() * roll_over_time_std
-        curr_att = attitude_over_time[:,index]
-        RotXYZ(curr_att[1] + roll_noise, curr_att[2] + pitch_noise, curr_att[3] + yaw_noise)
+        hcat(map(get_steer_vec, julienne(attitude * doas, (:,*)))...)::Array{Complex{Float64}, 2}
     end
 end
