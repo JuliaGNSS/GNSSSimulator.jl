@@ -24,13 +24,14 @@ Pkg.clone("git@git.rwth-aachen.de:nav/GNSSSimulator.jl.git")
 
 ```julia
 using GNSSSimulator
+using Unitful: dB
 doas = sim_doas()
 existing_sats = sim_existing_sats(trues(11))
-pseudo_post_corr_signal = sim_pseudo_post_corr_signal(11, 0)
+pseudo_post_corr_signal = sim_pseudo_post_corr_signal(11, 0dB)
 attitude = sim_attitude(0.0, 0.0, 0.0)
-gain_phase_mism_and_crosstalk = sim_gain_phase_mism_and_crosstalk(4, -15)
+gain_phase_mism_and_crosstalk = sim_gain_phase_mism_and_crosstalk(4, -15dB)
 steering_vectors = sim_steering_vectors(a -> [a[1] + 0.0im, a[1] + 0.0im, a[2] + 0.0im, a[3] + 0.0im])
-noise = sim_noise(-15, 4)
+noise = sim_noise(-15dB, 4)
 
 measurement = sim_post_corr_measurement(
     existing_sats,

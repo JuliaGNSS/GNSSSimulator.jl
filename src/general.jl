@@ -109,8 +109,8 @@ julia> pseudo_post_corr_signal(0, [trues(4); falses(28)])
  -0.636383+0.771374im
 ```
 """
-function sim_pseudo_post_corr_signal(num_sats, signal_power_dB, init_phase_var_between_signals = π)
-    amplitude = 10^(signal_power_dB / 20)
+function sim_pseudo_post_corr_signal(num_sats, signal_power, init_phase_var_between_signals = π)
+    amplitude = sqrt(uconvertp(NoUnits, signal_power))
     init_signal_phase = randn(num_sats) * sqrt(init_phase_var_between_signals)
     signal = amplitude .* cis.(init_signal_phase)
     (t, existing_sats) -> begin
@@ -125,8 +125,8 @@ Simulates a varying pseudo post correlation signal over time `t` for given `exis
 instance with the power of `signal_power_dB`. Pseudo means that no GNSS data is included.
 
 """
-function sim_pseudo_post_corr_signal(num_sats, signal_power_dB, init_phase_var_between_signals, ampl_var, phase_var)
-    pseudo_post_corr_signal = sim_pseudo_post_corr_signal(num_sats, signal_power_dB, init_phase_var_between_signals)
+function sim_pseudo_post_corr_signal(num_sats, signal_power, init_phase_var_between_signals, ampl_var, phase_var)
+    pseudo_post_corr_signal = sim_pseudo_post_corr_signal(num_sats, signal_power, init_phase_var_between_signals)
     ampl_std = sqrt(ampl_var)
     phase_std = sqrt(phase_var)
     (t, existing_sats) -> begin
@@ -221,8 +221,8 @@ julia> noise(0, trues(4))
  0.00825569-0.0178933im  -0.153156+0.190351im     0.206146+0.0168782im   -0.213834-0.0693882im
 ```
 """
-function sim_noise(noise_power_dB, num_ants = 1)
-    amplitude = 10^(noise_power_dB / 20)
+function sim_noise(noise_power, num_ants = 1)
+    amplitude = sqrt(uconvertp(NoUnits, noise_power))
     (t, existing_sats) -> begin
         num_sats = sum(existing_sats)
         complex.(randn(num_ants, num_sats), randn(num_ants, num_sats)) / sqrt(2) * amplitude

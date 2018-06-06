@@ -5,3 +5,4 @@ Rotations
 StaticArrays
 JuliennedArrays
 DocStringExtensions
+Unitful

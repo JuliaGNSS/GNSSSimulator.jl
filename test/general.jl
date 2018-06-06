@@ -18,13 +18,13 @@ end
 
 @testset "Pseudo post corr signal" begin
     @testset "Power" begin
-        pseudo_post_corr_signal = @inferred GNSSSimulator.sim_pseudo_post_corr_signal(1, 0)
+        pseudo_post_corr_signal = @inferred GNSSSimulator.sim_pseudo_post_corr_signal(1, 5)
         signal_ampl_and_phase = @inferred pseudo_post_corr_signal(0, true)
-        @test abs(signal_ampl_and_phase) ≈ 1
+        @test abs(signal_ampl_and_phase) ≈ sqrt(5)
     end
 
     @testset "Phase variance between satellites" begin
-        gen_signal_ampl_and_phase = @inferred GNSSSimulator.sim_pseudo_post_corr_signal(1000, 0, 0.1)
+        gen_signal_ampl_and_phase = @inferred GNSSSimulator.sim_pseudo_post_corr_signal(1000, 1, 0.1)
         signal_ampl_and_phase = @inferred gen_signal_ampl_and_phase(0, trues(1000))
         @test var(angle.(signal_ampl_and_phase)) ≈ 0.1 atol = 0.01
     end
@@ -32,11 +32,11 @@ end
 
 @testset "Noise" begin
     num_ants = 4
-    num_sats = 100
-    noise_power_dB = -15
-    gen_noise = @inferred GNSSSimulator.sim_noise(noise_power_dB, num_ants)
+    num_sats = 1000
+    noise_power = 2
+    gen_noise = @inferred GNSSSimulator.sim_noise(noise_power, num_ants)
     noise = @inferred(gen_noise(0, trues(num_sats)))
-    @test noise * noise' / num_sats ≈ eye(num_ants) * 10^(noise_power_dB / 20) atol = 0.4
+    @test noise * noise' / num_sats ≈ eye(num_ants) * noise_power atol = 0.4
 end
 
 @testset "DOA over time" begin

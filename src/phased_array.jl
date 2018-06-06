@@ -24,11 +24,11 @@ and `noise` which provides the noise over time `t`
 ```julia-repl
 julia> doas = sim_doas()
 julia> existing_sats = sim_existing_sats(trues(11))
-julia> pseudo_post_corr_signal = sim_pseudo_post_corr_signal(11, 0)
+julia> pseudo_post_corr_signal = sim_pseudo_post_corr_signal(11, 0dB)
 julia> attitude = sim_attitude(0.0, 0.0, 0.0)
-julia> gain_phase_mism_and_crosstalk = sim_gain_phase_mism_and_crosstalk(4, -15)
+julia> gain_phase_mism_and_crosstalk = sim_gain_phase_mism_and_crosstalk(4, -15dB)
 julia> steering_vectors = sim_steering_vectors(a -> [a[1] + 0.0im, a[1] + 0.0im, a[2] + 0.0im, a[3] + 0.0im])
-julia> noise = sim_noise(-15, 4)
+julia> noise = sim_noise(-15dB, 4)
 julia> measurement = sim_post_corr_measurement(
         existing_sats,
         pseudo_post_corr_signal,
@@ -81,18 +81,18 @@ julia> gain_phase_mism_and_crosstalk(0)
 """
 function sim_gain_phase_mism_and_crosstalk(
         num_ants, 
-        init_crosstalk_to_direct_power_dB,
+        init_crosstalk_to_direct_power,
         init_phase_mism_betw_ant_var = π / 2,
         init_gain_mism_betw_ant_var = 0.1,
         init_crosstalk_phase_var = π,
-        init_crosstalk_ampl_var = init_gain_mism_betw_ant_var * 10^(init_crosstalk_to_direct_power_dB / 10)
+        init_crosstalk_ampl_var = init_gain_mism_betw_ant_var * uconvertp(NoUnits, init_crosstalk_to_direct_power)
     )
 
     init_phase_mism = randn(num_ants) * sqrt(init_phase_mism_betw_ant_var)
     init_gain_mism = ones(num_ants) + randn(num_ants) * sqrt(init_gain_mism_betw_ant_var)
 
     init_crosstalk_ampl = (ones(num_ants, num_ants) + randn(num_ants, num_ants) * sqrt(init_crosstalk_ampl_var)) .*
-        (ones(num_ants, num_ants) - eye(num_ants)) * 10^(init_crosstalk_to_direct_power_dB / 10)
+        (ones(num_ants, num_ants) - eye(num_ants)) * uconvertp(NoUnits, init_crosstalk_to_direct_power)
     init_crosstalk_phase = randn(num_ants, num_ants) * sqrt(init_crosstalk_phase_var)
 
     gain_and_phase_mism = init_gain_mism .* cis.(init_phase_mism)

@@ -1,13 +1,13 @@
 @testset "Gain and phase mismatch and crosstalk" begin
 
     @testset "Crosstalk amplitude" begin
-        crosstalk_dB = -10
-        gen_gp_mism_crosstalk = @inferred GNSSSimulator.sim_gain_phase_mism_and_crosstalk(4, crosstalk_dB, 0, 0, 0, 0)
+        crosstalk_gain = 0.1
+        gen_gp_mism_crosstalk = @inferred GNSSSimulator.sim_gain_phase_mism_and_crosstalk(4, crosstalk_gain, 0, 0, 0, 0)
 
         gp_mism_crosstalk = @inferred gen_gp_mism_crosstalk(0)
 
         @test abs(gp_mism_crosstalk[1,1]) == abs(gp_mism_crosstalk[2,2])
-        @test abs(gp_mism_crosstalk[1,1]) * 10^(crosstalk_dB / 10) ≈ abs(gp_mism_crosstalk[1,2])
+        @test abs(gp_mism_crosstalk[1,1]) * crosstalk_gain ≈ abs(gp_mism_crosstalk[1,2])
         @test abs(gp_mism_crosstalk[1,2]) == abs(gp_mism_crosstalk[2,1])
     end
 
@@ -29,11 +29,11 @@ end
 
     doas = sim_doas()
     existing_sats = sim_existing_sats(trues(11))
-    pseudo_post_corr_signal = sim_pseudo_post_corr_signal(11, 0)
+    pseudo_post_corr_signal = sim_pseudo_post_corr_signal(11, 1)
     attitude = sim_attitude(0.0, 0.0, 0.0)
-    gain_phase_mism_and_crosstalk = sim_gain_phase_mism_and_crosstalk(4, -15)
+    gain_phase_mism_and_crosstalk = sim_gain_phase_mism_and_crosstalk(4, 0.031)
     steering_vectors = sim_steering_vectors(a -> [a[1] + 0.0im, a[1] + 0.0im, a[2] + 0.0im, a[3] + 0.0im])
-    noise = sim_noise(-15, 4)
+    noise = sim_noise(0.178, 4)
 
     measurement = @inferred sim_post_corr_measurement(
         existing_sats,
