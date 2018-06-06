@@ -27,23 +27,22 @@ end
 
 @testset "Measurement" begin
 
-    doas_over_time = sim_doas()
-    existing_sats_over_time = sim_existing_sats(trues(11))
-    pseudo_post_corr_signal_over_time = sim_pseudo_post_corr_signal(11, 0)
-    attitude_over_time = sim_attitude(0.0, 0.0, 0.0)
-    gain_phase_mism_and_crosstalk_over_time = sim_gain_phase_mism_and_crosstalk(4, -15)
-    steering_vectors_over_time = sim_steering_vectors(a -> [a[1] + 0.0im, a[1] + 0.0im, a[2] + 0.0im, a[3] + 0.0im])
-    noise_over_time = sim_noise(-15, 4)
+    doas = sim_doas()
+    existing_sats = sim_existing_sats(trues(11))
+    pseudo_post_corr_signal = sim_pseudo_post_corr_signal(11, 0)
+    attitude = sim_attitude(0.0, 0.0, 0.0)
+    gain_phase_mism_and_crosstalk = sim_gain_phase_mism_and_crosstalk(4, -15)
+    steering_vectors = sim_steering_vectors(a -> [a[1] + 0.0im, a[1] + 0.0im, a[2] + 0.0im, a[3] + 0.0im])
+    noise = sim_noise(-15, 4)
 
     measurement = @inferred sim_post_corr_measurement(
-        existing_sats_over_time,
-        pseudo_post_corr_signal_over_time,
-        attitude_over_time,
-        doas_over_time,
-        gain_phase_mism_and_crosstalk_over_time,
-        steering_vectors_over_time,
-        noise_over_time
-    )
+        existing_sats,
+        pseudo_post_corr_signal,
+        attitude,
+        doas,
+        gain_phase_mism_and_crosstalk,
+        steering_vectors,
+        noise)
 
     𝐘, internal_states = @inferred measurement(0)
     @test size(𝐘) == (4,11)
