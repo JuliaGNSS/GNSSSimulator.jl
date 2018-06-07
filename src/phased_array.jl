@@ -133,6 +133,6 @@ julia> steering_vectors(0, RotXYZ(0,0,0), [zeros(2,5); ones(1,5)])
 """
 function sim_steering_vectors(get_steer_vec)
     (t, attitude, doas) -> begin
-        hcat(map(get_steer_vec, julienne(attitude * doas, (:,*)))...)::Array{Complex{Float64}, 2}
+        reduce(hcat, map(get_steer_vec, julienne(attitude * doas, (:,*))))::Array{Complex{Float64}, 2}
     end
 end
