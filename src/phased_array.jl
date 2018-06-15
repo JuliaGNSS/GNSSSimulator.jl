@@ -1,6 +1,6 @@
 struct InternalStates
         doas::Matrix{Float64}
-        existing_sats::Vector{Float64}
+        existing_sats::Vector{Bool}
         attitude::RotXYZ
         gain_phase_mism_crosstalk::Matrix{Complex{Float64}}
         steering_vectors::Matrix{Complex{Float64}}
