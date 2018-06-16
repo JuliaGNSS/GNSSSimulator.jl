@@ -3,10 +3,8 @@ struct InternalStates
         existing_sats::Vector{Bool}
         attitude::RotXYZ
         gain_phase_mism_crosstalk::Matrix{Complex{Float64}}
-        steering_vectors::Matrix{Complex{Float64}}
         signal::Vector{Complex{Float64}}
         interf_doas::Matrix{Float64}
-        interf_steering_vectors::Matrix{Complex{Float64}}
         interf_signal::Vector{Complex{Float64}}
 end
 
@@ -49,9 +47,9 @@ function sim_post_corr_measurement(
         doas,
         gain_phase_mism_and_crosstalk,
         steering_vectors,
+        noise,
         interf_doas,
-        interf_post_corr_signal,
-        noise
+        interf_post_corr_signal
     )
 
     t -> begin
@@ -66,7 +64,7 @@ function sim_post_corr_measurement(
         𝐬_interf = interf_post_corr_signal(t, curr_existing_sats)
         𝐍 = noise(t, curr_existing_sats)
         𝐘 = 𝐂 * (𝐀 .* 𝐬.' .+ 𝐀_interf .* 𝐬_interf.' .+ 𝐍)
-        internal_states = InternalStates(curr_doas, curr_existing_sats, curr_attitude, 𝐂, 𝐀, 𝐬, curr_interf_doas, 𝐀_interf, 𝐬_interf)
+        internal_states = InternalStates(curr_doas, curr_existing_sats, curr_attitude, 𝐂, 𝐬, curr_interf_doas, 𝐬_interf)
         𝐘, internal_states
     end
 end
@@ -90,7 +88,7 @@ function sim_post_corr_measurement(
         𝐬 = post_corr_signal(t, curr_existing_sats)
         𝐍 = noise(t, curr_existing_sats)
         𝐘 = 𝐂 * (𝐀 .* 𝐬.' + 𝐍)
-        internal_states = InternalStates(curr_doas, curr_existing_sats, curr_attitude, 𝐂, 𝐀, 𝐬)
+        internal_states = InternalStates(curr_doas, curr_existing_sats, curr_attitude, 𝐂, 𝐬, zeros(curr_doas), zeros(size(𝐬)))
         𝐘, internal_states
     end
 end

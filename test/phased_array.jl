@@ -45,8 +45,6 @@ end
         doas,
         gain_phase_mism_and_crosstalk,
         steering_vectors,
-        interf_doas,
-        pseudo_post_corr_inferf_signal,
         noise)
 
     𝐘, internal_states = @inferred measurement(0)

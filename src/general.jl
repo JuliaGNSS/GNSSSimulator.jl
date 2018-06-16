@@ -214,6 +214,17 @@ end
 """
 $(SIGNATURES)
 
+Internal pseudo post inference free signal
+"""
+function sim_pseudo_post_corr_interf_free_signal()
+    (t, existing_sats) -> begin
+        zeros(sum(existing_sats))
+    end
+end
+
+"""
+$(SIGNATURES)
+
 Simulates a static attitude over time `t`.
 
 # Examples
