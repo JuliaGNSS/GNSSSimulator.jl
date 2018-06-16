@@ -49,6 +49,52 @@ end
 """
 $(SIGNATURES)
 
+Simulates one interference direction of arrival for all satellites.
+
+# Examples
+```julia-repl
+julia> doas = sim_interf_doas(5)
+julia> doas(0, trues(5))
+3×5 Array{Float64,2}:
+ 0.664463  0.664463  0.664463  0.664463  0.664463
+ 0.664463  0.664463  0.664463  0.664463  0.664463
+ 0.34202   0.34202   0.34202   0.34202   0.34202
+```
+"""
+function sim_interf_doas(num_sats, sph_doa::Spherical = Spherical(1.0, 45 * π / 180, 20 * π / 180))
+    doas = reduce(hcat, fill(CartesianFromSpherical()(sph_doa), num_sats))
+    (t, existing_sats) -> doas[:,existing_sats]
+end
+
+"""
+$(SIGNATURES)
+
+Simulates the interference direction over time based on the data `doas_over_time` with the sample frequency `sample_freq`.
+The first dimension of the data should contain the cartesian unit vectors. The second dimension should be the time.
+
+# Examples
+```julia-repl
+julia> doas_data = repeat([0.6409   0.526   -0.6634   0.8138;
+                          -0.6409  -0.0646   0.383   -0.2962;
+                           0.4226   0.848    0.6428   0.5   ], outer = [1,1,10]);
+julia> doas = sim_doas(doas_data, 10);
+julia> doas(0, trues(4))
+3×4 Array{Float64,2}:
+  0.6409   0.526   -0.6634   0.8138
+ -0.6409  -0.0646   0.383   -0.2962
+  0.4226   0.848    0.6428   0.5
+```
+"""
+function sim_interf_doas(doas_over_time, sample_freq)
+    (t, existing_sats) -> begin
+        index = floor(Int, t * sample_freq) + 1
+        doas_over_time[:,existing_sats,index]
+    end
+end
+
+"""
+$(SIGNATURES)
+
 Simulates a static satellite existence over time `t` based on the boolean array `existing_sats`. 
 
 # Examples
@@ -96,7 +142,7 @@ end
 $(SIGNATURES)
 
 Simulates a pseudo post correlation signal over time `t` for given `existing_sats` at that time 
-instance with the power of `signal_power_dB`. Pseudo means that no GNSS data is included.
+instance with the power of `signal_power`. Pseudo means that no GNSS data is included.
 
 # Examples
 ```julia-repl
@@ -122,7 +168,7 @@ end
 $(SIGNATURES)
 
 Simulates a varying pseudo post correlation signal over time `t` for given `existing_sats` at that time 
-instance with the power of `signal_power_dB`. Pseudo means that no GNSS data is included.
+instance with the power of `signal_power`. Pseudo means that no GNSS data is included.
 
 """
 function sim_pseudo_post_corr_signal(num_sats, signal_power, init_phase_var_between_signals, ampl_var, phase_var)
@@ -133,6 +179,35 @@ function sim_pseudo_post_corr_signal(num_sats, signal_power, init_phase_var_betw
         curr_num_sats = sum(existing_sats)
         signal = pseudo_post_corr_signal(t, existing_sats)
         (abs.(signal) .+ randn(curr_num_sats) .* ampl_std) .* cis.(angle.(signal) .+ randn(curr_num_sats) .* phase_std)
+    end
+end
+
+"""
+$(SIGNATURES)
+
+Simulates a pseudo post correlation interference signal over time `t` for given `existing_sats` at that time 
+instance with the power of `signal_power`. Pseudo means that no GNSS data is included.
+
+# Examples
+```julia-repl
+julia> existing_interf_data = repeat([falses(2); true; falses(29)], outer = [1,10]);
+julia> pseudo_post_corr_interf_signal = sim_pseudo_post_corr_interf_signal(existing_interf_data, 10, -3dB);
+julia> pseudo_post_corr_interf_signal(0, [trues(4); falses(28)])
+4-element Array{Complex{Float64},1}:
+       0.0-0.0im
+      -0.0+0.0im
+ -0.707302+0.0301864im
+       0.0+0.0im
+```
+"""
+function sim_pseudo_post_corr_interf_signal(interf_over_time, sample_freq, signal_power, init_phase_var_between_signals = π)
+    amplitude = sqrt(uconvertp(NoUnits, signal_power))
+    init_interf_phase = randn(size(interf_over_time, 1)) * sqrt(init_phase_var_between_signals)
+    interf_signal_all = amplitude .* cis.(init_interf_phase)
+    (t, existing_sats) -> begin
+        index = floor(Int, t * sample_freq) + 1
+        interf_signal = interf_signal_all .* interf_over_time[:,index]
+        interf_signal[existing_sats]
     end
 end
 

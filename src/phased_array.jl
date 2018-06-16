@@ -5,6 +5,9 @@ struct InternalStates
         gain_phase_mism_crosstalk::Matrix{Complex{Float64}}
         steering_vectors::Matrix{Complex{Float64}}
         signal::Vector{Complex{Float64}}
+        interf_doas::Matrix{Float64}
+        interf_steering_vectors::Matrix{Complex{Float64}}
+        interf_signal::Vector{Complex{Float64}}
 end
 
 """
@@ -39,6 +42,35 @@ julia> measurement = sim_post_corr_measurement(
         noise)
 ```
 """
+function sim_post_corr_measurement(
+        existing_sats,
+        post_corr_signal,
+        attitude,
+        doas,
+        gain_phase_mism_and_crosstalk,
+        steering_vectors,
+        interf_doas,
+        interf_post_corr_signal,
+        noise
+    )
+
+    t -> begin
+        curr_existing_sats = existing_sats(t)
+        curr_attitude = attitude(t)
+        curr_doas = doas(t, curr_existing_sats)
+        curr_interf_doas = interf_doas(t, curr_existing_sats)
+        𝐀 = steering_vectors(t, curr_attitude, curr_doas)
+        𝐀_interf = steering_vectors(t, curr_attitude, curr_interf_doas)
+        𝐂 = gain_phase_mism_and_crosstalk(t)
+        𝐬 = post_corr_signal(t, curr_existing_sats)
+        𝐬_interf = interf_post_corr_signal(t, curr_existing_sats)
+        𝐍 = noise(t, curr_existing_sats)
+        𝐘 = 𝐂 * (𝐀 .* 𝐬.' .+ 𝐀_interf .* 𝐬_interf.' .+ 𝐍)
+        internal_states = InternalStates(curr_doas, curr_existing_sats, curr_attitude, 𝐂, 𝐀, 𝐬, curr_interf_doas, 𝐀_interf, 𝐬_interf)
+        𝐘, internal_states
+    end
+end
+
 function sim_post_corr_measurement(
         existing_sats,
         post_corr_signal,
@@ -82,7 +114,7 @@ julia> gain_phase_mism_and_crosstalk(0)
 function sim_gain_phase_mism_and_crosstalk(
         num_ants, 
         init_crosstalk_to_direct_power,
-        init_phase_mism_betw_ant_var = π / 2,
+        init_phase_mism_betw_ant_var = π / 8,
         init_gain_mism_betw_ant_var = 0.1,
         init_crosstalk_phase_var = π,
         init_crosstalk_ampl_var = init_gain_mism_betw_ant_var * uconvertp(NoUnits, init_crosstalk_to_direct_power)

@@ -33,6 +33,9 @@ end
     attitude = sim_attitude(0.0, 0.0, 0.0)
     gain_phase_mism_and_crosstalk = sim_gain_phase_mism_and_crosstalk(4, 0.031)
     steering_vectors = sim_steering_vectors(a -> [a[1] + 0.0im, a[1] + 0.0im, a[2] + 0.0im, a[3] + 0.0im])
+    interf_doas = sim_interf_doas(11)
+    existing_interf_data = repeat([falses(2); true; falses(8)], outer = [1,10]);
+    pseudo_post_corr_inferf_signal = sim_pseudo_post_corr_interf_signal(existing_interf_data, 10, 0.5);
     noise = sim_noise(0.178, 4)
 
     measurement = @inferred sim_post_corr_measurement(
@@ -42,6 +45,8 @@ end
         doas,
         gain_phase_mism_and_crosstalk,
         steering_vectors,
+        interf_doas,
+        pseudo_post_corr_inferf_signal,
         noise)
 
     𝐘, internal_states = @inferred measurement(0)

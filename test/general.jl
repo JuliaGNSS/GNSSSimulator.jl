@@ -59,6 +59,36 @@ end
     @test @inferred(gen_doas(0.1, [true; false])) ≈ [0;1;0]
 end
 
+@testset "Interference DOA over time" begin
+
+    doas = sim_interf_doas(5, Spherical(1.0, 0.0, π / 2))
+    @test @inferred(doas(0, trues(5))) ≈ repeat([0,0,1], outer=[1,5])
+
+    num_sats = 2
+    num_timestamps = 2
+    doas_data = zeros(3,num_sats,num_timestamps)
+    doas_data[:,1,1] = [1;0;0]
+    doas_data[:,1,2] = [0;1;0]
+    doas = @inferred GNSSSimulator.sim_interf_doas(doas_data, 10)
+
+    @test @inferred(doas(0.0, trues(2))) == [1 0;0 0;0 0]
+    @test @inferred(doas(0.1, trues(2))) == [0 0;1 0;0 0]
+
+    @test @inferred(doas(0.0, [true; false])) ≈ [1;0;0]
+    @test @inferred(doas(0.1, [true; false])) ≈ [0;1;0]
+end
+
+@testset "Interference signal" begin
+
+    existing_interf_data = repeat([falses(2); true; falses(29)], outer = [1,10]);
+    pseudo_post_corr_interf_signal = sim_pseudo_post_corr_interf_signal(existing_interf_data, 10, 0.5);
+    signal = pseudo_post_corr_interf_signal(0, [trues(4); falses(28)])
+    @test signal[1] == 0
+    @test signal[2] == 0
+    @test signal[3] * conj(signal[3]) ≈ 0.5
+    @test signal[4] == 0
+end
+
 @testset "Attitude" begin
 
     attitude = @inferred GNSSSimulator.sim_attitude(0.0, 0.0, 0.0)
