@@ -20,7 +20,7 @@ end
     @testset "Power" begin
         pseudo_post_corr_signal = @inferred GNSSSimulator.sim_pseudo_post_corr_signal(1, 5)
         signal_ampl_and_phase = @inferred pseudo_post_corr_signal(0, true)
-        @test abs(signal_ampl_and_phase) ≈ sqrt(5)
+        @test abs(signal_ampl_and_phase[1]) ≈ sqrt(5)
     end
 
     @testset "Phase variance between satellites" begin
@@ -43,7 +43,7 @@ end
 
     existing_sats = [true, true, true, true, true, true, true, true, true, true, false]
     gen_doas = @inferred GNSSSimulator.sim_doas()
-    @test @inferred(gen_doas(1, existing_sats)) == DEFAULT_DOAS[:,1:10]
+    @test @inferred(gen_doas(1)) == DEFAULT_DOAS[:,1:11]
 
     num_sats = 2
     num_timestamps = 2
@@ -52,17 +52,14 @@ end
     doas_data[:,1,2] = [0;1;0]
     gen_doas = @inferred GNSSSimulator.sim_doas(doas_data, 10)
 
-    @test @inferred(gen_doas(0.0, trues(2))) == [1 0;0 0;0 0]
-    @test @inferred(gen_doas(0.1, trues(2))) == [0 0;1 0;0 0]
-
-    @test @inferred(gen_doas(0.0, [true; false])) ≈ [1;0;0]
-    @test @inferred(gen_doas(0.1, [true; false])) ≈ [0;1;0]
+    @test @inferred(gen_doas(0.0)) == [1 0;0 0;0 0]
+    @test @inferred(gen_doas(0.1)) == [0 0;1 0;0 0]
 end
 
 @testset "Interference DOA over time" begin
 
     doas = sim_interf_doas(5, Spherical(1.0, 0.0, π / 2))
-    @test @inferred(doas(0, trues(5))) ≈ repeat([0,0,1], outer=[1,5])
+    @test @inferred(doas(0)) ≈ repeat([0,0,1], outer=[1,5])
 
     num_sats = 2
     num_timestamps = 2
@@ -71,22 +68,16 @@ end
     doas_data[:,1,2] = [0;1;0]
     doas = @inferred GNSSSimulator.sim_interf_doas(doas_data, 10)
 
-    @test @inferred(doas(0.0, trues(2))) == [1 0;0 0;0 0]
-    @test @inferred(doas(0.1, trues(2))) == [0 0;1 0;0 0]
-
-    @test @inferred(doas(0.0, [true; false])) ≈ [1;0;0]
-    @test @inferred(doas(0.1, [true; false])) ≈ [0;1;0]
+    @test @inferred(doas(0.0)) == [1 0;0 0;0 0]
+    @test @inferred(doas(0.1)) == [0 0;1 0;0 0]
 end
 
 @testset "Interference signal" begin
 
-    existing_interf_data = repeat([falses(2); true; falses(29)], outer = [1,10]);
-    pseudo_post_corr_interf_signal = sim_pseudo_post_corr_interf_signal(existing_interf_data, 10, 0.5);
+    pseudo_post_corr_interf_signal = sim_pseudo_post_corr_interf_signal(32, 0.5);
     signal = pseudo_post_corr_interf_signal(0, [trues(4); falses(28)])
-    @test signal[1] == 0
-    @test signal[2] == 0
-    @test signal[3] * conj(signal[3]) ≈ 0.5
-    @test signal[4] == 0
+    @test sum(signal[1:4] .* conj(signal[1:4]) .≈ 0.5) == 4
+    @test sum(signal[5:32] .== 0) == 28
 end
 
 @testset "Attitude" begin

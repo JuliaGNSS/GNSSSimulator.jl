@@ -17,7 +17,7 @@ function sim_doas()
     doas = [0.6409    0.5260   -0.6634    0.8138   -0.5000   -0.9513   -0.6634         0    0.4924   -0.3100         0;
            -0.6409   -0.0646    0.3830   -0.2962   -0.5000   -0.1677   -0.5567   -0.0872    0.4132    0.8517   -0.9659;
             0.4226    0.8480    0.6428    0.5000    0.7071    0.2588    0.5000    0.9962    0.7660    0.4226    0.2588]
-    (t, existing_sats) -> doas[:,existing_sats]
+    t -> doas
 end
 
 """
@@ -40,9 +40,9 @@ julia> doas(0, trues(4))
 ```
 """
 function sim_doas(doas_over_time, sample_freq)
-    (t, existing_sats) -> begin
+    t -> begin
         index = floor(Int, t * sample_freq) + 1
-        doas_over_time[:,existing_sats,index]
+        doas_over_time[:,:,index]
     end
 end
 
@@ -63,7 +63,7 @@ julia> doas(0, trues(5))
 """
 function sim_interf_doas(num_sats, sph_doa::Spherical = Spherical(1.0, 45 * π / 180, 20 * π / 180))
     doas = reduce(hcat, fill(CartesianFromSpherical()(sph_doa), num_sats))
-    (t, existing_sats) -> doas[:,existing_sats]
+    t -> doas
 end
 
 """
@@ -86,9 +86,9 @@ julia> doas(0, trues(4))
 ```
 """
 function sim_interf_doas(doas_over_time, sample_freq)
-    (t, existing_sats) -> begin
+    t -> begin
         index = floor(Int, t * sample_freq) + 1
-        doas_over_time[:,existing_sats,index]
+        doas_over_time[:,:,index]
     end
 end
 
@@ -141,6 +141,53 @@ end
 """
 $(SIGNATURES)
 
+Simulates a static interference existence over time `t` based on the boolean array `existing_interfs`.
+Note that the length must equal to the existence of satellites. 
+
+# Examples
+```julia-repl
+julia> existing_interfs = sim_existing_interfs(trues(4));
+julia> existing_interfs(0)
+4-element BitArray{1}:
+ true
+ true
+ true
+ true
+```
+"""
+function sim_existing_interfs(existing_interfs)
+    t -> existing_interfs
+end
+
+"""
+$(SIGNATURES)
+
+Simulates a varying interference existence over time `t` based on the data `existing_interfs_over_time`
+and sample frequency `sample_freq`. The first dimension should hold existence of interferences and
+the second dimension the time. Note that the length must equal to the existence of satellites.
+
+# Examples
+```julia-repl
+julia> existing_sats_data = repeat(trues(4), outer = [1,10]);
+julia> existing_sats = sim_existing_sats(existing_sats_data, 10);
+julia> existing_sats(0)
+4-element BitArray{1}:
+ true
+ true
+ true
+ true
+```
+"""
+function sim_existing_interfs(existing_interfs_over_time, sample_freq)
+    t -> begin
+        index = floor(Int, t * sample_freq) + 1
+        existing_interfs_over_time[:, index]
+    end
+end
+
+"""
+$(SIGNATURES)
+
 Simulates a pseudo post correlation signal over time `t` for given `existing_sats` at that time 
 instance with the power of `signal_power`. Pseudo means that no GNSS data is included.
 
@@ -160,7 +207,7 @@ function sim_pseudo_post_corr_signal(num_sats, signal_power, init_phase_var_betw
     init_signal_phase = randn(num_sats) * sqrt(init_phase_var_between_signals)
     signal = amplitude .* cis.(init_signal_phase)
     (t, existing_sats) -> begin
-        signal[existing_sats]
+        signal .* existing_sats
     end
 end
 
@@ -176,39 +223,30 @@ function sim_pseudo_post_corr_signal(num_sats, signal_power, init_phase_var_betw
     ampl_std = sqrt(ampl_var)
     phase_std = sqrt(phase_var)
     (t, existing_sats) -> begin
-        curr_num_sats = sum(existing_sats)
         signal = pseudo_post_corr_signal(t, existing_sats)
-        (abs.(signal) .+ randn(curr_num_sats) .* ampl_std) .* cis.(angle.(signal) .+ randn(curr_num_sats) .* phase_std)
+        (abs.(signal) .+ randn(num_sats) .* existing_sats .* ampl_std) .* cis.(angle.(signal) .+ randn(num_sats) .* existing_sats .* phase_std)
     end
 end
 
 """
 $(SIGNATURES)
 
-Simulates a pseudo post correlation interference signal over time `t` for given `existing_sats` at that time 
+Simulates a pseudo post correlation interference signal over time `t` for given `existing_interfs` at that time 
 instance with the power of `signal_power`. Pseudo means that no GNSS data is included.
 
 # Examples
 ```julia-repl
-julia> existing_interf_data = repeat([falses(2); true; falses(29)], outer = [1,10]);
-julia> pseudo_post_corr_interf_signal = sim_pseudo_post_corr_interf_signal(existing_interf_data, 10, -3dB);
+julia> pseudo_post_corr_interf_signal = sim_pseudo_post_corr_interf_signal(32, -3dB);
 julia> pseudo_post_corr_interf_signal(0, [trues(4); falses(28)])
 4-element Array{Complex{Float64},1}:
-       0.0-0.0im
-      -0.0+0.0im
- -0.707302+0.0301864im
-       0.0+0.0im
+ -0.374531-0.927215im
+  0.382237-0.924065im
+  0.146641-0.98919im
+ -0.636383+0.771374im
 ```
 """
-function sim_pseudo_post_corr_interf_signal(interf_over_time, sample_freq, signal_power, init_phase_var_between_signals = π)
-    amplitude = sqrt(uconvertp(NoUnits, signal_power))
-    init_interf_phase = randn(size(interf_over_time, 1)) * sqrt(init_phase_var_between_signals)
-    interf_signal_all = amplitude .* cis.(init_interf_phase)
-    (t, existing_sats) -> begin
-        index = floor(Int, t * sample_freq) + 1
-        interf_signal = interf_signal_all .* interf_over_time[:,index]
-        interf_signal[existing_sats]
-    end
+function sim_pseudo_post_corr_interf_signal(num_interfs, signal_power, init_phase_var_between_signals = π)
+    sim_pseudo_post_corr_signal(num_interfs, signal_power, init_phase_var_between_signals)
 end
 
 """
@@ -218,7 +256,7 @@ Internal pseudo post inference free signal
 """
 function sim_pseudo_post_corr_interf_free_signal()
     (t, existing_sats) -> begin
-        zeros(sum(existing_sats))
+        zeros(length(existing_sats))
     end
 end
 
@@ -310,7 +348,7 @@ julia> noise(0, trues(4))
 function sim_noise(noise_power, num_ants = 1)
     amplitude = sqrt(uconvertp(NoUnits, noise_power))
     (t, existing_sats) -> begin
-        num_sats = sum(existing_sats)
+        num_sats = length(existing_sats)
         complex.(randn(num_ants, num_sats), randn(num_ants, num_sats)) / sqrt(2) * amplitude
     end
 end

@@ -11,6 +11,7 @@ module GNSSSimulator
     sim_noise,
     sim_gain_phase_mism_and_crosstalk,
     sim_steering_vectors,
+    sim_existing_interfs,
     sim_interf_doas,
     sim_pseudo_post_corr_interf_signal
 

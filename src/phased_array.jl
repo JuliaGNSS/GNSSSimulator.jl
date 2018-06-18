@@ -48,24 +48,27 @@ function sim_post_corr_measurement(
         gain_phase_mism_and_crosstalk,
         steering_vectors,
         noise,
+        existing_interfs,
         interf_doas,
         interf_post_corr_signal
     )
 
     t -> begin
         curr_existing_sats = existing_sats(t)
+        curr_existing_interfs = existing_interfs(t)
         curr_attitude = attitude(t)
-        curr_doas = doas(t, curr_existing_sats)
-        curr_interf_doas = interf_doas(t, curr_existing_sats)
-        𝐀 = steering_vectors(t, curr_attitude, curr_doas)
-        𝐀_interf = steering_vectors(t, curr_attitude, curr_interf_doas)
+        curr_doas = doas(t)
+        curr_interf_doas = interf_doas(t)
+        𝐀 = steering_vectors(t, curr_attitude, curr_doas, curr_existing_sats)
+        𝐀_interf = steering_vectors(t, curr_attitude, curr_interf_doas, curr_existing_interfs)
         𝐂 = gain_phase_mism_and_crosstalk(t)
         𝐬 = post_corr_signal(t, curr_existing_sats)
-        𝐬_interf = interf_post_corr_signal(t, curr_existing_sats)
+        𝐬_interf = interf_post_corr_signal(t, curr_existing_interfs)
         𝐍 = noise(t, curr_existing_sats)
+        curr_existing_emitters = curr_existing_interfs .| curr_existing_sats
         𝐘 = 𝐂 * (𝐀 .* 𝐬.' .+ 𝐀_interf .* 𝐬_interf.' .+ 𝐍)
         internal_states = InternalStates(curr_doas, curr_existing_sats, curr_attitude, 𝐂, 𝐬, curr_interf_doas, 𝐬_interf)
-        𝐘, internal_states
+        𝐘[:,curr_existing_emitters], internal_states
     end
 end
 
@@ -82,14 +85,14 @@ function sim_post_corr_measurement(
     t -> begin
         curr_existing_sats = existing_sats(t)
         curr_attitude = attitude(t)
-        curr_doas = doas(t, curr_existing_sats)
-        𝐀 = steering_vectors(t, curr_attitude, curr_doas)
+        curr_doas = doas(t)
+        𝐀 = steering_vectors(t, curr_attitude, curr_doas, curr_existing_sats)
         𝐂 = gain_phase_mism_and_crosstalk(t)
         𝐬 = post_corr_signal(t, curr_existing_sats)
         𝐍 = noise(t, curr_existing_sats)
         𝐘 = 𝐂 * (𝐀 .* 𝐬.' + 𝐍)
         internal_states = InternalStates(curr_doas, curr_existing_sats, curr_attitude, 𝐂, 𝐬, zeros(curr_doas), zeros(size(𝐬)))
-        𝐘, internal_states
+        𝐘[:,curr_existing_sats], internal_states
     end
 end
 
@@ -147,13 +150,13 @@ end
 $(SIGNATURES)
 
 Simulates steering vectors over time using the given `get_steer_vec` function. It returns a function based on time,
-attitude and doas. The output type is specified because currently the splatting make it type instable:
+attitude, doas and existing emitters. The output type is specified because currently the splatting make it type instable:
 https://github.com/JuliaLang/julia/issues/21672
 
 # Examples
 ```julia-repl
 julia> steering_vectors = sim_steering_vectors(a -> complex.(randn(4), randn(4)));
-julia> steering_vectors(0, RotXYZ(0,0,0), [zeros(2,5); ones(1,5)])
+julia> steering_vectors(0, RotXYZ(0,0,0), [zeros(2,5); ones(1,5)], trues(5))
 4×5 Array{Complex{Float64},2}:
   1.21626+0.501292im  -0.081102-0.278121im     -0.8059+1.00751im   0.559731+0.638522im  0.598888+1.12544im
   1.43552-1.20201im     1.19489+0.0726409im  -0.324954-0.652084im  0.282833-0.28839im   -1.80852-1.30904im
@@ -162,7 +165,15 @@ julia> steering_vectors(0, RotXYZ(0,0,0), [zeros(2,5); ones(1,5)])
 ```
 """
 function sim_steering_vectors(get_steer_vec)
-    (t, attitude, doas) -> begin
-        mapreduce(get_steer_vec, hcat, julienne(attitude * doas, (:,*)))::Array{Complex{Float64}, 2}
+    num_ants = length(get_steer_vec([0,0,1]))
+    (t, attitude, doas, existing_emitters) -> begin
+        steer_vec_array = map(julienne(doas, (:,*)), existing_emitters) do doa, existing_emitter
+            if existing_emitter
+                get_steer_vec(attitude * doa)
+            else
+                ones(Complex{Float64}, num_ants)
+            end
+        end
+        reduce(hcat, steer_vec_array)::Array{Complex{Float64}, 2}
     end
 end
