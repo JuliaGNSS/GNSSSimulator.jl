@@ -79,7 +79,7 @@ function carrier_phase(sat_user_distance, freq)
 end
 
 function code_phase(sat_user_distance, freq, code_length)
-    mod(freq * sat_distance / SPEED_OF_LIGHT, code_length)
+    mod(freq * sat_user_distance / SPEED_OF_LIGHT, code_length)
 end
 
 function doppler(distance_from_earth_center, enu_doa, velocity, center_freq) # Assume sat velocity only in elevation direction
