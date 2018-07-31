@@ -1,3 +1,18 @@
+struct CWJammer{T <: Union{Spherical{R}, AbstractDynamicDOA{R}} where R<:Real} <: AbstractJammer
+    id::Int
+    enu_doa::T
+    relative_velocity::Float64
+    JNR::Float64
+end
+
+"""
+($SIGNATURES)
+Calculate amplitude of a signal with `cn0_dB` dB , assumes noise power of 1.
+"""
+function calc_amplitude_from_jnr(jnr_dB) # Assumes noise power of 1
+    10^(jnr_dB / 20)
+end
+
 """
 $(SIGNATURES)
 
@@ -20,5 +35,5 @@ function _sim_cw_jammer_signal(num_samples, gnss_system, carrier_phase, doppler,
     next_carrier_phase = get_carrier_phase(num_samples, carrier_freq_with_doppler, carrier_phase, sample_freq)
     sampled_carrier = gen_carrier(1:num_samples, carrier_freq_with_doppler, carrier_phase, sample_freq)
     signal = sampled_carrier .* amplitude
-    num_samples -> _sim_cw_jammer_signal(num_samples, gnss_system, next_carrier_phase, doppler, sample_freq, amplitude, interm_freq), signal, EmitterInternalStates(doppler, NaN)
+    num_samples -> _sim_cw_jammer_signal(num_samples, gnss_system, next_carrier_phase, doppler, sample_freq, amplitude, interm_freq), signal, EmitterInternalStates(doppler, carrier_phase, NaN)
 end

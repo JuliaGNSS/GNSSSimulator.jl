@@ -17,6 +17,7 @@ end
 
 struct EmitterInternalStates
     doppler::Float64
+    carrier_phase::Float64
     code_phase::Float64
 end
 
@@ -27,20 +28,9 @@ end
     Δelevation_per_s::T = 0.0
 end
 
-@with_kw struct Satellite{T <: Union{Spherical{R}, AbstractDynamicDOA{R}} where R<:Real} <: AbstractEmitter
-    svid::Int
-    enu_doa::T
-    velocity::Float64 = 14_000 / 3.6 # Assume sat velocity only in elevation direction
-    CN0::Float64 = 45
-    distance_from_earth_center::Float64 = 26_560_000
-end
 
-struct CWJammer{T <: Union{Spherical{R}, AbstractDynamicDOA{R}} where R<:Real} <: AbstractJammer
-    id::Int
-    enu_doa::T
-    relative_velocity::Float64
-    JNR::Float64
-end
+
+
 
 @with_kw struct LinearDynamicAttitude{T <: Real} <: AbstractDynamicAttitude{T}
     init_attitude::RotXYZ{T} = RotXYZ(0,0,0)
@@ -144,22 +134,6 @@ Calculate doppler from `relative_velocity` and `center_freq`.
 """
 function doppler(relative_velocity, center_freq)
     center_freq / SPEED_OF_LIGHT * relative_velocity
-end
-
-"""
-($SIGNATURES)
-Calculate amplitude of a signal with `cn0_dB` dB and `bandwidth`, assumes noise power of 1.
-"""
-function calc_amplitude_from_cn0(cn0_dB, bandwidth) # Assumes noise power of 1
-    sqrt(10^(cn0_dB / 10) / bandwidth)
-end
-
-"""
-($SIGNATURES)
-Calculate amplitude of a signal with `cn0_dB` dB , assumes noise power of 1.
-"""
-function calc_amplitude_from_jnr(jnr_dB) # Assumes noise power of 1
-    10^(jnr_dB / 20)
 end
 
 """

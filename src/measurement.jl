@@ -28,6 +28,6 @@ function _sim_measurement(num_samples, time, sim_emitter_signals, emitters, atti
     next_sim_emitter_signals = map(x -> x[2], return_values)
     internal_states = map(x -> x[3], return_values)
     num_ants = length(get_steer_vec([0,0,1]))
-    signal = sum(steered_emitter_signals) + gen_noise(num_ants, num_samples)
+    signal = sum(steered_emitter_signals) #+ gen_noise(num_ants, num_samples)
     num_samples -> _sim_measurement(num_samples, next_time, next_sim_emitter_signals, emitters, attitude, get_steer_vec, sample_freq), signal, internal_states
 end

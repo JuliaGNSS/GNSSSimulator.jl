@@ -1,3 +1,19 @@
+@with_kw struct Satellite{T <: Union{Spherical{R}, AbstractDynamicDOA{R}} where R<:Real} <: AbstractEmitter
+    svid::Int
+    enu_doa::T
+    velocity::Float64 = 14_000 / 3.6 # Assume sat velocity only in elevation direction
+    CN0::Float64 = 45
+    distance_from_earth_center::Float64 = 26_560_000
+end
+
+"""
+($SIGNATURES)
+Calculate amplitude of a signal with `cn0_dB` dB and `bandwidth`, assumes noise power of 1.
+"""
+function calc_amplitude_from_cn0(cn0_dB, bandwidth) # Assumes noise power of 1
+    sqrt(10^(cn0_dB / 10) / bandwidth)
+end
+
 """
 $(SIGNATURES)
 
@@ -25,6 +41,7 @@ function _sim_sat_signal(num_samples, gnss_system, code_phase, carrier_phase, do
     sampled_code = gnss_system.gen_sampled_code(1:num_samples, code_freq_with_doppler, code_phase, sample_freq, svid)
     next_carrier_phase = get_carrier_phase(num_samples, carrier_freq_with_doppler, carrier_phase, sample_freq)
     sampled_carrier = gen_carrier(1:num_samples, carrier_freq_with_doppler, carrier_phase, sample_freq)
-    signal = sampled_code .* sampled_carrier .* amplitude
-    num_samples -> _sim_sat_signal(num_samples, gnss_system, next_code_phase, next_carrier_phase, doppler, sample_freq, interm_freq, amplitude, svid), signal, EmitterInternalStates(doppler, code_phase)
+    #println("carrier freq with doppler", carrier_freq_with_doppler, " carrier_phase", carrier_phase, "\n", "code_freq_with_doppler", code_freq_with_doppler, " code_phase", code_phase)
+    signal = sampled_code .* sampled_carrier #.* amplitude
+    num_samples -> _sim_sat_signal(num_samples, gnss_system, next_code_phase, next_carrier_phase, doppler, sample_freq, interm_freq, amplitude, svid), signal, EmitterInternalStates(doppler, carrier_phase, code_phase)
 end
