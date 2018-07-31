@@ -13,7 +13,8 @@ module GNSSSimulator
     sim_steering_vectors,
     sim_existing_interfs,
     sim_interf_doas,
-    sim_pseudo_post_corr_interf_signal
+    sim_pseudo_post_corr_interf_signal,
+    InternalStates
 
   include("general.jl")
   include("phased_array.jl")
