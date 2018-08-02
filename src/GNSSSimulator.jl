@@ -1,6 +1,6 @@
 module GNSSSimulator
 
-  using DocStringExtensions, Rotations, JuliennedArrays, Unitful, CoordinateTransformations, Parameters, GNSSSignals
+  using DocStringExtensions, Rotations, JuliennedArrays, Unitful, CoordinateTransformations, Parameters, GNSSSignals, FunctionWrappers
   import Base.transpose
 
   export sim_post_corr_measurement,
