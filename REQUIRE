@@ -6,3 +6,4 @@ StaticArrays
 JuliennedArrays
 DocStringExtensions
 Unitful
+Parameters
