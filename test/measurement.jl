@@ -1,10 +1,6 @@
-const LOTHARS_DOAS = [0.6409    0.5260   -0.6634    0.8138 ;
-                      -0.6409   -0.0646    0.3830   -0.2962;
-                       0.4226    0.8480    0.6428    0.5000]
-const NUM_ANTS = 4
-
 @testset "Measurement" begin
-    sat_channels = [GNSSSimulator.SatelliteChannel(i, SVector{3}(LOTHARS_DOAS[:,i]), 1 * cis(pi/2), true, SVector{3}(0.0,0.0,1.0), 0.0 + 0.0im, false) for i = 1:4]
+    num_sats = 4
+    sat_channels = [GNSSSimulator.SatelliteChannel(i, SVector{3}(LOTHARS_DOAS[:,i]), 1 * cis(pi/2), true, SVector{3}(0.0,0.0,1.0), 0.0 + 0.0im, false) for i = 1:num_sats]
     attitudes = GNSSSimulator.StaticAttitudes(RotXYZ(0.1, 0.2, 0.3))
     gain_phase_mism_and_crosstalk = sim_gain_phase_mism_and_crosstalk(NUM_ANTS, 0.031)
     get_steer_vec(doa) = [1 + 0im, 1 + 0im, 1 + 0im, 1 + 0im]
@@ -19,7 +15,7 @@ const NUM_ANTS = 4
 
     𝐘, internal_states = measurement(1s)
 
-    @test size(𝐘) == (NUM_ANTS, size(LOTHARS_DOAS, 2))
+    @test size(𝐘) == (NUM_ANTS, num_sats)
     @test 𝐘[:, 2] == gain_phase_mism_and_crosstalk(1s) * [1 + 0im, 1 + 0im, 1 + 0im, 1 + 0im] .* (1 * cis(pi/2)) 
     @test size(internal_states.gain_phase_mism_crosstalk) == (NUM_ANTS, NUM_ANTS)
     @test internal_states.sat_channels[1].doa == SVector{3}([0.6409; -0.6409; 0.4226])

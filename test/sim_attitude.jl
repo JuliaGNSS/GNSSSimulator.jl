@@ -1,12 +1,3 @@
-const STAT_ATT = RotXYZ(0.1, 0.2, 0.3)
-const DYN_ATT = [[RotXYZ(0.1, 0.2, 0.3)]; [RotXYZ(0.3, 0.4, 0.5)]; [RotXYZ(0.5, 0.6, 0.7)]]
-const STD_ROLL = 0.05
-const STD_PITCH = 0.02
-const STA_YAW = 0.05
-const ΔROLL_PER_S = 0.2rad / 1s
-const ΔPITCH_PER_S = 0.2rad / 1s
-const ΔYAW_PER_S = 0.2rad / 1s
-
 @testset "Attitude" begin
     @testset "Static Attitudes" begin
         struct_stat_att = GNSSSimulator.StaticAttitudes(STAT_ATT)
