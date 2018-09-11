@@ -16,7 +16,7 @@
     code_phase = GNSSSimulator.calc_code_phase(sat_user_distance, code_freq, code_length)
     carrier_phase = calc_carrier_phase(sat_user_distance, center_freq + doppler)
 
-    @test signal ≈ cis.(2π * (interm_freq + doppler) / sample_freq * test_range + carrier_phase) .* gen_code(gnss_system, test_range, code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) / sample_freq)
+    @test signal ≈ cis.(2π * (interm_freq + doppler) / sample_freq * test_range .+ carrier_phase) .* gen_code(gnss_system, test_range, code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) / sample_freq)
 
     @test @inferred(GNSSSimulator.calc_code_phase(0m, 1_023_000Hz, 1023)) == 0
     @test @inferred(GNSSSimulator.calc_code_phase(293.255132m, 1_023_000Hz, 1023)) ≈ 1 rtol = 1e-3 # 1 Chip is around 300m 

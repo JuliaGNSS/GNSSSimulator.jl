@@ -32,7 +32,7 @@
 
         @test meas_dyn_std_roll ≈ STD_ROLL atol = 0.002
         @test meas_dyn_std_pitch ≈ STD_PITCH atol = 0.002
-        @test meas_dyn_std_yaw ≈ STD_YAW atol = 0.002
+        @test meas_dyn_std_yaw ≈ STD_YAW atol = 0.003
         @test meas_lin_dyn_std_roll ≈ STD_ROLL atol = 0.002
         @test meas_lin_dyn_std_pitch ≈ STD_PITCH atol = 0.002
         @test meas_lin_dyn_std_yaw ≈ STD_YAW atol = 0.002

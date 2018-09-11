@@ -15,7 +15,6 @@ Simulates post correlation measurement. It depends on:
     attitude;
 'noise_power' specifies the noise in [dB].
 """
-
 function sim_post_corr_measurement(
     sat_channels,
     attitudes,

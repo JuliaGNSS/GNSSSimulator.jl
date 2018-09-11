@@ -13,7 +13,7 @@ $(SIGNATURES)
 Calculate code phase based on the distance between satellite and user, the code frequency `freq` and the code length `code_length`.
 """
 function calc_code_phase(sat_user_distance, freq, code_length)
-    mod(Float64(freq * sat_user_distance / SPEED_OF_LIGHT), code_length)
+    mod(convert(Float64, (freq * sat_user_distance / SPEED_OF_LIGHT)), code_length)
 end
 
 """

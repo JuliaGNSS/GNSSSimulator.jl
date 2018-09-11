@@ -16,12 +16,12 @@ function sim_gain_phase_mism_and_crosstalk(
     init_gain_mism = ones(num_ants) + randn(num_ants) * sqrt(init_gain_mism_betw_ant_var)
 
     init_crosstalk_ampl = (ones(num_ants, num_ants) + randn(num_ants, num_ants) * sqrt(init_crosstalk_ampl_var)) .*
-        (ones(num_ants, num_ants) - eye(num_ants)) * uconvertp(NoUnits, init_crosstalk_to_direct_power)
+        (ones(num_ants, num_ants) - Matrix(1.0I, num_ants, num_ants)) * uconvertp(NoUnits, init_crosstalk_to_direct_power)
     init_crosstalk_phase = randn(num_ants, num_ants) * sqrt(init_crosstalk_phase_var)
 
     gain_and_phase_mism = init_gain_mism .* cis.(init_phase_mism)
     crosstalk = init_crosstalk_ampl .* cis.(init_crosstalk_phase)
-    gain_phase_mism_and_crosstalk = normalize_gain_phase_mism_and_crosstalk(diagm(gain_and_phase_mism) + crosstalk)
+    gain_phase_mism_and_crosstalk = normalize_gain_phase_mism_and_crosstalk(diagm(0 => gain_and_phase_mism) + crosstalk)
 
     t -> gain_phase_mism_and_crosstalk
 end

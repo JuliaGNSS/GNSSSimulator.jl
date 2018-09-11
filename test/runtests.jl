@@ -1,5 +1,5 @@
-using Base.Test, GNSSSimulator, Rotations, CoordinateTransformations, JuliennedArrays, StaticArrays, GNSSSignals
-using Unitful: dB, Hz, dBHz, m, s, rad, °
+using Test, GNSSSimulator, Rotations, CoordinateTransformations, JuliennedArrays, StaticArrays, GNSSSignals, Random, Statistics, Unitful, LinearAlgebra
+import Unitful: dB, Hz, dBHz, m, s, rad, °
 
 const STAT_ATT = RotXYZ(0.1, 0.2, 0.3)
 const DYN_ATT = [[RotXYZ(0.1, 0.2, 0.3)]; [RotXYZ(0.3, 0.4, 0.5)]; [RotXYZ(0.5, 0.6, 0.7)]]
@@ -20,7 +20,7 @@ const LOTHARS_DOAS = [0.6409    0.5260   -0.6634    0.8138   -0.5000   -0.9513  
                       0.4226    0.8480    0.6428    0.5000    0.7071    0.2588    0.5000    0.9962    0.7660    0.4226    0.2588]    
 const NUM_ANTS = 4
 
-srand(1234)
+Random.seed!(1234)
 
 include("attitude.jl")
 include("doa.jl")

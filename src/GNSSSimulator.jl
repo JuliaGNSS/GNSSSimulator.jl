@@ -1,6 +1,6 @@
 module GNSSSimulator
 
-    using DocStringExtensions, Rotations, JuliennedArrays, Unitful, CoordinateTransformations, Parameters, StaticArrays, GNSSSignals, FunctionWrappers
+    using DocStringExtensions, Rotations, JuliennedArrays, Unitful, CoordinateTransformations, Parameters, StaticArrays, GNSSSignals, FunctionWrappers, LinearAlgebra
     import Base.transpose
     import Unitful: Hz, rad, s, m, dB, °, dBHz
         
