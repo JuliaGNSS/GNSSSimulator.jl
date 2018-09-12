@@ -31,7 +31,7 @@ end
     sample_freq = 4e6Hz
     interm_freq = 100_000Hz
     gnss_system = GNSSSimulator.GPSL1()
-    jammer = GNSSSimulator.CWJammer(1, CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), 0.0m / 1.0s, 20.0dB)
+    jammer = GNSSSimulator.CWJammer(1, CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), 0.0m / 1.0s, 20.0dB, true)
     sat = GNSSSimulator.Satellite(prn = 1, enu_doa = CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)))
     attitude = RotXYZ(0.0, 0.0, 0.0)
     emitters = [sat, jammer]
@@ -41,7 +41,7 @@ end
     next_measurement, signal1, internal_states = measurement(10)
     next_measurement, signal_short1, internal_states = measurement(5)
     next_measurement, signal_short2, internal_states = next_measurement(5)
-    signal2 = [signal_short1 signal_short2]
+    signal2 = [signal_short1; signal_short2]
     @test signal1 ≈ signal2
 end
 
@@ -50,12 +50,18 @@ end
     interm_freq = 100_000Hz
     jammer_power = 20.0dB
     gnss_system = GNSSSimulator.GPSL1()
-    jammer = GNSSSimulator.CWJammer(1, CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), 0.0m / 1s, jammer_power)
+    jammer = GNSSSimulator.CWJammer(1, CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), 0.0m / 1s, jammer_power, true)
     attitude = RotXYZ(0.0, 0.0, 0.0)
     emitters = [jammer]
     get_steer_vec(doa) = [0.5, 0.5, 0.5, 0.5]
     measurement = @inferred GNSSSimulator.init_sim_measurement(emitters, gnss_system, attitude, get_steer_vec, sample_freq, interm_freq, false)
 
     next_measurement, signal, internal_states = measurement(100)
-    @test signal ≈ get_steer_vec(Spherical(0.0, 0.0, 1.0)) * cis.(2π * interm_freq / sample_freq * (1:100)') * uconvertrp(NoUnits, jammer_power)
+    @test signal ≈ transpose(get_steer_vec(Spherical(0.0, 0.0, 1.0))) .* cis.(2π * interm_freq / sample_freq * (1:100)) * uconvertrp(NoUnits, jammer_power)
+
+    jammer = GNSSSimulator.CWJammer(1, CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), 0.0m / 1s, jammer_power, false)
+    measurement = @inferred GNSSSimulator.init_sim_measurement([jammer], gnss_system, attitude, get_steer_vec, sample_freq, interm_freq, false)
+
+    next_measurement, signal, internal_states = measurement(100)
+    @test signal ≈ zeros(100, 4)
 end

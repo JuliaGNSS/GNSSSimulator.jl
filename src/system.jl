@@ -46,5 +46,5 @@ $(SIGNATURES)
 Create a random complex noise signal.
 """
 function gen_noise(num_ants, num_samples)
-    complex.(randn(num_ants, num_samples), randn(num_ants, num_samples)) / sqrt(2)
+    complex.(randn(num_samples, num_ants), randn(num_samples, num_ants)) / sqrt(2)
 end

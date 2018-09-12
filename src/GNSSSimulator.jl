@@ -4,7 +4,11 @@ module GNSSSimulator
     import Base.transpose
     import Unitful: Hz, rad, s, m, dB, °, dBHz
         
-    export sim_attitude,
+    export
+        CWJammer,
+        SatelliteChannel,
+        Satellite, 
+        sim_attitude,
         sim_doa,
         sim_existence,
         gen_example_sat_channels,
@@ -118,11 +122,27 @@ module GNSSSimulator
         gain_phase_mism_crosstalk::Matrix{Complex{Float64}}
     end
 
-    struct CWJammer{T <: Union{SVector{3, R}, AbstractDynamicDOA} where R<:Real} <: AbstractJammer
+    struct CWJammer{
+        T <: Union{SVector{3, R}, AbstractDynamicDOA} where R<:Real,
+        E <: Union{Bool, AbstractDynamicExistence}
+    } <: AbstractJammer
         id::Int
         enu_doa::T
         relative_velocity::typeof(1.0m / 1.0s)
         JNR::typeof(1.0dB)
+        exists::E
+    end
+
+    @with_kw struct Satellite{
+        T <: Union{SVector{3, R}, AbstractDynamicDOA} where R<:Real,
+        E <: Union{Bool, AbstractDynamicExistence}
+    } <: AbstractEmitter
+        prn::Int
+        enu_doa::T
+        velocity::typeof(1.0m / 1.0s) = 14_000.0m / 3.6s
+        CN0::typeof(1.0dBHz) = 45.0dBHz
+        distance_from_earth_center::typeof(1.0m) = 26_560_000.0m
+        exists::E = true
     end
   
     struct NoisyPseudoPostCorr <: AbstractNoisyPseudoPostCorr
@@ -130,14 +150,6 @@ module GNSSSimulator
         phase::Float64 # in [rad]. Input in [°] will be converted to rad.
         ampl_std::Float64
         phase_std::Float64 # in [rad]. Input in [°] will be converted to rad.
-    end
-
-    @with_kw struct Satellite{T <: Union{SVector{3, R}, AbstractDynamicDOA} where R<:Real} <: AbstractEmitter
-        prn::Int
-        enu_doa::T
-        velocity::typeof(1.0m / 1.0s) = 14_000.0m / 3.6s
-        CN0::typeof(1.0dBHz) = 45.0dBHz
-        distance_from_earth_center::typeof(1.0m) = 26_560_000.0m
     end
 
     struct EmitterInternalStates

@@ -72,8 +72,9 @@ function _sim_measurement(num_samples, time, sim_emitter_signals, emitters, atti
     return_values = map(sim_emitter_signals, emitters) do sim_emitter_signal, emitter
         cart_enu_doa = sim_doa(time, emitter.enu_doa)
         rotated_doa = sim_attitude(time, attitude) * cart_enu_doa
+        exists = sim_existence(time, emitter.exists)
         next_sim_emitter_signal, emitter_signal, internal_state = sim_emitter_signal(num_samples)
-        steered_emitter_signal = get_steer_vec(rotated_doa) .* transpose(emitter_signal)
+        steered_emitter_signal = transpose(get_steer_vec(rotated_doa)) .* emitter_signal .* exists
         steered_emitter_signal, next_sim_emitter_signal, internal_state
     end
     steered_emitter_signals = map(x -> x[1], return_values)

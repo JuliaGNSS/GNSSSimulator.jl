@@ -8,7 +8,7 @@
     test_range = 1:num_samples
     gnss_system = GPSL1()
     attitude = RotXYZ(0.0, 0.0, 0.0)
-    sat = GNSSSimulator.Satellite(prn = 1, enu_doa = CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), CN0 = cn0)
+    sat = Satellite(prn = 1, enu_doa = CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), CN0 = cn0)
     measurement = @inferred GNSSSimulator.init_sim_emitter_signal(sat, gnss_system, sample_freq, interm_freq)
     next_measurement, signal, internal_states = @inferred measurement(num_samples)
     doppler = calc_init_doppler(sat.distance_from_earth_center, sat.enu_doa, sat.velocity, center_freq)
@@ -40,7 +40,7 @@ end
     test_range = 1:num_samples
     gnss_system = GPSL5()
     attitude = RotXYZ(0.0, 0.0, 0.0)
-    sat = GNSSSimulator.Satellite(prn = 1, enu_doa = CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), CN0 = cn0)
+    sat = Satellite(prn = 1, enu_doa = CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), CN0 = cn0)
     measurement = @inferred GNSSSimulator.init_sim_emitter_signal(sat, gnss_system, sample_freq, interm_freq)
     next_measurement, signal, internal_states = @inferred measurement(num_samples)
     doppler = calc_init_doppler(sat.distance_from_earth_center, sat.enu_doa, sat.velocity, center_freq)
