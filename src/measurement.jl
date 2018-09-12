@@ -2,18 +2,18 @@
 $(SIGNATURES)
 
 Simulates post correlation measurement. It depends on:
-'sat_channels' is a struct containing the channel number, 
+`sat_channels` is a struct containing the channel number, 
     the complex signal after correlation, its DOA and a 
     boolean field which is '1' if the signal exists for both
     the satellite and the inference signal;
-'attitudes' is a struct containing a 3×3 rotation matrix of 
+`attitudes` is a struct containing a 3×3 rotation matrix of 
     the antenna's current rotation which can be either static
     or time-dependent and optionally noisy;
-'gain_phase_mism_and_crosstalk' provides the gain and phase 
-    mismatch and crosstalk matrix over time 't';
-'get_steer_vec' provides the steering vectors for the DOA and 
+`gain_phase_mism_and_crosstalk` provides the gain and phase 
+    mismatch and crosstalk matrix over time `t`;
+`get_steer_vec` provides the steering vectors for the DOA and 
     attitude;
-'noise_power' specifies the noise in [dB].
+`noise_power` specifies the noise in [dB].
 """
 function sim_post_corr_measurement(
     sat_channels,
@@ -51,10 +51,12 @@ function sim_post_corr_measurement(
         measurement = 𝐂 * measurement_wo_crosstalk
 
         measurement, InternalStates(sat_channel_states, curr_attitude, 𝐂)
-end
+    end
 end
 
 """
+$(SIGNATURES)
+
 Simulates the measurement based on an Array of `emitters` with a subtype of `AbstractEmitter`. `emitters` may also be a scalar.
 The GNSS System is specified by `gnss_system`, the attitude of the antenna by `attitude`, the sample frequency by `sample_freq` and
 the intermediate frequency by `interm_freq`. The steering vectors for each DOA are specified by the function `get_steer_vec` which
@@ -71,8 +73,9 @@ function _sim_measurement(num_samples, time, sim_emitter_signals, emitters, atti
     return_values = map(sim_emitter_signals, emitters) do sim_emitter_signal, emitter
         cart_enu_doa = sim_doa(time, emitter.enu_doa)
         rotated_doa = sim_attitude(time, attitude) * cart_enu_doa
+        exists = sim_existence(time, emitter.exists)
         next_sim_emitter_signal, emitter_signal, internal_state = sim_emitter_signal(num_samples)
-        steered_emitter_signal = get_steer_vec(rotated_doa) .* transpose(emitter_signal)
+        steered_emitter_signal = transpose(get_steer_vec(rotated_doa)) .* emitter_signal .* exists
         steered_emitter_signal, next_sim_emitter_signal, internal_state
     end
     steered_emitter_signals = map(x -> x[1], return_values)

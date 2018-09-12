@@ -1,5 +1,5 @@
 using Test, GNSSSimulator, Rotations, CoordinateTransformations, JuliennedArrays, StaticArrays, GNSSSignals, Random, Statistics, Unitful, LinearAlgebra
-import Unitful: dB, Hz, dBHz, m, s, rad, °
+import Unitful: dB, Hz, kHz, MHz, GHz, dBHz, m, s, rad, °
 
 const STAT_ATT = RotXYZ(0.1, 0.2, 0.3)
 const DYN_ATT = [[RotXYZ(0.1, 0.2, 0.3)]; [RotXYZ(0.3, 0.4, 0.5)]; [RotXYZ(0.5, 0.6, 0.7)]]
@@ -19,6 +19,7 @@ const LOTHARS_DOAS = [0.6409    0.5260   -0.6634    0.8138   -0.5000   -0.9513  
                      -0.6409   -0.0646    0.3830   -0.2962   -0.5000   -0.1677   -0.5567   -0.0872    0.4132    0.8517   -0.9659;
                       0.4226    0.8480    0.6428    0.5000    0.7071    0.2588    0.5000    0.9962    0.7660    0.4226    0.2588]    
 const NUM_ANTS = 4
+const EARTH_RADIUS = 6_360_000m
 
 Random.seed!(1234)
 
@@ -31,5 +32,4 @@ include("measurement.jl")
 include("noise.jl")
 include("pseudo_post_corr_signal.jl")
 include("satellite.jl")
-
-println("End of tests.")
+include("system.jl")
