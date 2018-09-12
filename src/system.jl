@@ -18,7 +18,7 @@ $(SIGNATURES)
 Calculate carrier phase based on the distance between user and satellite `sat_user_distance` and frequency `freq`.
 """
 function calc_carrier_phase(sat_user_distance, freq)
-    mod2pi(2 * π * freq * sat_user_distance / SPEED_OF_LIGHT)
+    mod2pi(2π * freq * sat_user_distance / SPEED_OF_LIGHT)
 end
 
 """

@@ -2,18 +2,18 @@
 $(SIGNATURES)
 
 Simulates post correlation measurement. It depends on:
-'sat_channels' is a struct containing the channel number, 
+`sat_channels` is a struct containing the channel number, 
     the complex signal after correlation, its DOA and a 
     boolean field which is '1' if the signal exists for both
     the satellite and the inference signal;
-'attitudes' is a struct containing a 3×3 rotation matrix of 
+`attitudes` is a struct containing a 3×3 rotation matrix of 
     the antenna's current rotation which can be either static
     or time-dependent and optionally noisy;
-'gain_phase_mism_and_crosstalk' provides the gain and phase 
-    mismatch and crosstalk matrix over time 't';
-'get_steer_vec' provides the steering vectors for the DOA and 
+`gain_phase_mism_and_crosstalk` provides the gain and phase 
+    mismatch and crosstalk matrix over time `t`;
+`get_steer_vec` provides the steering vectors for the DOA and 
     attitude;
-'noise_power' specifies the noise in [dB].
+`noise_power` specifies the noise in [dB].
 """
 
 function sim_post_corr_measurement(

@@ -1,7 +1,7 @@
 """
 $(SIGNATURES)
 
-Simulates gain and phase mismatch and crosstalk. Returns a function which depends on time 't'.
+Simulates gain and phase mismatch and crosstalk. Returns a function which depends on time `t`.
 """
 function sim_gain_phase_mism_and_crosstalk(
         num_ants, 

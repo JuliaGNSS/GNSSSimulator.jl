@@ -149,7 +149,7 @@ module GNSSSimulator
     """
     $(SIGNATURES)
         
-    Generates a default struct of type "Satellite Channel" if no interference specified. "No interference" is assumed in that case.
+    Generates a default struct of type `SatelliteChannel` if no interference specified. No interference is assumed in that case.
     """
     function SatelliteChannel(channel, enu_doa, signal, exists)
         interf_enu_doa = SVector{3}(0.0, 0.0, 1.0)
@@ -161,7 +161,7 @@ module GNSSSimulator
     """
     $(SIGNATURES)
         
-    Generates a default struct of type "Satellite Channel" if DOA of static satellite signal given in spherical coordinates. DOA is converted to Cartesian coordinates.
+    Generates a default struct of type `SatelliteChannel` if DOA of static satellite signal given in spherical coordinates. DOA is converted to Cartesian coordinates.
     """
     function SatelliteChannel(channel, enu_doa::Spherical, signal, exists, interf_enu_doa, interf_signal, interf_exists)
         enu_doa_cart = CartesianFromSpherical()(enu_doa)
@@ -171,7 +171,7 @@ module GNSSSimulator
     """
     $(SIGNATURES)
         
-    Generates a default struct of type "Satellite Channel" if DOA of static interference signal given in spherical coordinates. DOA is converted to Cartesian coordinates.
+    Generates a default struct of type `SatelliteChannel` if DOA of static interference signal given in spherical coordinates. DOA is converted to Cartesian coordinates.
     """
     function SatelliteChannel(channel, enu_doa, signal, exists, interf_enu_doa::Spherical, interf_signal, interf_exists)
         interf_enu_doa_cart = CartesianFromSpherical()(interf_enu_doa)
@@ -181,7 +181,7 @@ module GNSSSimulator
     """
     $(SIGNATURES)
 
-    Generates a default struct of type "Satellite Channel" if DOA of both static satellite and static interference signal given in spherical coordinates. Both DOAs are converted to Cartesian coordinates.
+    Generates a default struct of type `SatelliteChannel` if DOA of both static satellite and static interference signal given in spherical coordinates. Both DOAs are converted to Cartesian coordinates.
     """
     function SatelliteChannel(channel, enu_doa::Spherical, signal, exists, interf_enu_doa::Spherical, interf_signal, interf_exists)
         enu_doa_cart = CartesianFromSpherical()(enu_doa)
@@ -192,7 +192,7 @@ module GNSSSimulator
     """
     $(SIGNATURES)
 
-    Creates a struct of type "NoisyPseudoPostCorr" if the satellite signal power or interference power given in [dB]. Assuming no noise.
+    Creates a struct of type `NoisyPseudoPostCorr` if the satellite signal power or interference power given in [dB]. Assuming no noise.
     """
     function NoisyPseudoPostCorr(signal_power::Unitful.Gain, phase, ampl_std, phase_std)
         NoisyPseudoPostCorr(sqrt(uconvertrp(NoUnits, signal_power)), phase, ampl_std, phase_std)
