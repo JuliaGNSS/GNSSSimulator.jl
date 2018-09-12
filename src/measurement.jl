@@ -56,6 +56,8 @@ function sim_post_corr_measurement(
 end
 
 """
+$(SIGNATURES)
+
 Simulates the measurement based on an Array of `emitters` with a subtype of `AbstractEmitter`. `emitters` may also be a scalar.
 The GNSS System is specified by `gnss_system`, the attitude of the antenna by `attitude`, the sample frequency by `sample_freq` and
 the intermediate frequency by `interm_freq`. The steering vectors for each DOA are specified by the function `get_steer_vec` which
