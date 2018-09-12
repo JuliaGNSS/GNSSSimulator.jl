@@ -52,7 +52,7 @@ function sim_post_corr_measurement(
         measurement = 𝐂 * measurement_wo_crosstalk
 
         measurement, InternalStates(sat_channel_states, curr_attitude, 𝐂)
-end
+    end
 end
 
 """
