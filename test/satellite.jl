@@ -21,13 +21,12 @@
     @test internal_states.carrier_phase ≈ carrier_phase
     @test internal_states.code_phase ≈ code_phase
 
-    @test signal ≈ cis.(2π * (interm_freq + doppler) / sample_freq * test_range + carrier_phase) .* gen_code(gnss_system, test_range, code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) / sample_freq)
+    @test signal ≈ cis.(2π * (interm_freq + doppler) / sample_freq * test_range .+ carrier_phase) .* gen_code(gnss_system, test_range, code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) * 1/1Hz)
 
     @test @inferred(GNSSSimulator.calc_code_phase(0m, 1_023_000Hz, 1023)) == 0
     @test @inferred(GNSSSimulator.calc_code_phase(293.255132m, 1_023_000Hz, 1023)) ≈ 1 rtol = 1e-3 # 1 Chip is around 300m 
 
-    @test @inferred(GNSSSimulator.calc_amplitude_from_cn0(45dBHz, 4e6Hz)) ≈ sqrt(10^(45 / 10) / 4e6) 
-    @test @inferred(GNSSSimulator.calc_amplitude_from_cn0(42dBHz, 8e6Hz)) ≈ sqrt(10^(42 / 10) / 8e6)
+    @test @inferred(GNSSSimulator.calc_amplitude_from_cn0(45dBHz, 1/1Hz)) ≈ 10^(45 / 20)
 end
 
 @testset "Satellite L5" begin
@@ -53,5 +52,5 @@ end
     @test internal_states.carrier_phase ≈ carrier_phase
     @test internal_states.code_phase ≈ code_phase
 
-    @test signal ≈ cis.(2π * (interm_freq + doppler) / sample_freq * test_range + carrier_phase) .* gen_code(gnss_system, test_range, code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) / sample_freq)
+    @test signal ≈ cis.(2π * (interm_freq + doppler) / sample_freq * test_range .+ carrier_phase) .* gen_code(gnss_system, test_range, code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) * 1/1Hz)
 end
