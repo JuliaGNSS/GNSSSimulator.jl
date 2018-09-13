@@ -13,5 +13,5 @@
     @test doppler(0m / 1s, 20Hz) ≈ 0Hz
 
     noise = gen_noise(4, 100000)
-    @test noise' * noise / 100000 ≈ eye(4) atol = 1e-1
+    @test noise' * noise / 100000 ≈ I atol = 1e-1
 end
