@@ -57,8 +57,7 @@ end
     measurement = @inferred GNSSSimulator.init_sim_measurement(emitters, gnss_system, attitude, get_steer_vec, sample_freq, interm_freq, false)
 
     next_measurement, signal, internal_states = measurement(100)
-    @test signal ≈ transpose(get_steer_vec(Spherical(0.0, 0.0, 1.0))) .* cis.(2π * interm_freq / sample_freq * (1:100)) * uconvertrp(NoUnits, jammer_power)
-
+    @test signal ≈ transpose(get_steer_vec(Spherical(0.0, 0.0, 1.0))) .* cis.(2π * interm_freq / sample_freq * (1:100)) * sqrt(uconvertp(NoUnits, jammer.JNR) * sample_freq / 1Hz)
     jammer = GNSSSimulator.CWJammer(1, CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), 0.0m / 1s, jammer_power, false)
     measurement = @inferred GNSSSimulator.init_sim_measurement([jammer], gnss_system, attitude, get_steer_vec, sample_freq, interm_freq, false)
 

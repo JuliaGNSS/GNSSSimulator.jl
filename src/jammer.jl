@@ -7,7 +7,7 @@ Returns a function which is dependent on the number of samples `num_samples`.
 function init_sim_emitter_signal(jammer::CWJammer, gnss_system::S, sample_freq, interm_freq) where S <: AbstractGNSSSystem
     init_doppler = doppler(jammer.relative_velocity, gnss_system.center_freq)
     init_carrier_phase = 0.0
-    init_amplitude = uconvertrp(NoUnits, jammer.JNR) * sample_freq / 1Hz
+    init_amplitude = sqrt(uconvertp(NoUnits, jammer.JNR) * sample_freq / 1Hz)
     num_samples -> _sim_cw_jammer_signal(num_samples, gnss_system, init_carrier_phase, init_doppler, sample_freq, init_amplitude, interm_freq)
 end
 
