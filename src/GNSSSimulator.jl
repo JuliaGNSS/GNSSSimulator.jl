@@ -1,13 +1,26 @@
 module GNSSSimulator
 
-    using DocStringExtensions, Rotations, JuliennedArrays, Unitful, CoordinateTransformations, Parameters, StaticArrays, GNSSSignals, FunctionWrappers, LinearAlgebra
+    using
+        DocStringExtensions,
+        Rotations,
+        JuliennedArrays,
+        Unitful,
+        CoordinateTransformations,
+        Parameters,
+        StaticArrays,
+        GNSSSignals,
+        FunctionWrappers,
+        LinearAlgebra,
+        Destruct
+        
     import Base.transpose
     import Unitful: Hz, rad, s, m, dB, °, dBHz
-        
+
     export
         CWJammer,
         SatelliteChannel,
-        Satellite, 
+        Satellite,
+        DynamicExistence,
         sim_attitude,
         sim_doa,
         sim_existence,
@@ -25,12 +38,12 @@ module GNSSSimulator
         calc_init_doppler,
         doppler,
         gen_noise
-        
+
     const LOTHARS_DOAS = [0.6409    0.5260   -0.6634    0.8138   -0.5000   -0.9513   -0.6634         0    0.4924   -0.3100         0;
                          -0.6409   -0.0646    0.3830   -0.2962   -0.5000   -0.1677   -0.5567   -0.0872    0.4132    0.8517   -0.9659;
-                          0.4226    0.8480    0.6428    0.5000    0.7071    0.2588    0.5000    0.9962    0.7660    0.4226    0.2588]    
+                          0.4226    0.8480    0.6428    0.5000    0.7071    0.2588    0.5000    0.9962    0.7660    0.4226    0.2588]
 
-    abstract type AbstractDynamicAttitude end                      
+    abstract type AbstractDynamicAttitude end
     abstract type AbstractDynamicDOA end
     abstract type AbstractDynamicExistence end
     abstract type AbstractNoisyPseudoPostCorr end
@@ -43,7 +56,7 @@ module GNSSSimulator
         pitch_std::Float64
         yaw_std::Float64
     end
-        
+
     struct DynamicAttitude <: AbstractDynamicAttitude
         attitude::Array{RotXYZ{Float64}, 1}
         sample_freq::typeof(1.0Hz)
@@ -55,7 +68,7 @@ module GNSSSimulator
         Δpitch::typeof(1.0rad / 1.0s) = 0.0rad / 1.0s
         Δyaw::typeof(1.0rad / 1.0s) = 0.0rad / 1.0s
     end
-        
+
     struct NoisyDynamicAttitude <: AbstractDynamicAttitude
         attitude::Array{RotXYZ{Float64}, 1}
         sample_freq::typeof(1.0Hz)
@@ -78,7 +91,7 @@ module GNSSSimulator
         doas::T
         sample_freq::typeof(1.0Hz)
     end
-        
+
     @with_kw struct LinearDynamicDOA{R <: Real} <: AbstractDynamicDOA
         init_DOA::Spherical{R}
         Δazimuth::typeof(1.0rad / 1.0s) = 0.0rad / 1.0s
@@ -144,7 +157,7 @@ module GNSSSimulator
         distance_from_earth_center::typeof(1.0m) = 26_560_000.0m
         exists::E = true
     end
-  
+
     struct NoisyPseudoPostCorr <: AbstractNoisyPseudoPostCorr
         ampl::Float64
         phase::Float64 # in [rad]. Input in [°] will be converted to rad.
@@ -157,22 +170,22 @@ module GNSSSimulator
         carrier_phase::Float64 # in [rad]. Input in [°] will be converted to rad.
         code_phase::Float64 # in [rad]. Input in [°] will be converted to rad.
     end
-        
+
     """
     $(SIGNATURES)
-        
+
     Generates a default struct of type `SatelliteChannel` if no interference specified. No interference is assumed in that case.
     """
     function SatelliteChannel(channel, enu_doa, signal, exists)
         interf_enu_doa = SVector{3}(0.0, 0.0, 1.0)
         interf_signal = 0.0 + 0.0im
-        interf_exists = false 
+        interf_exists = false
         SatelliteChannel(channel, enu_doa, signal, exists, interf_enu_doa, interf_signal, interf_exists)
     end
 
     """
     $(SIGNATURES)
-        
+
     Generates a default struct of type `SatelliteChannel` if DOA of static satellite signal given in spherical coordinates. DOA is converted to Cartesian coordinates.
     """
     function SatelliteChannel(channel, enu_doa::Spherical, signal, exists, interf_enu_doa, interf_signal, interf_exists)
@@ -182,7 +195,7 @@ module GNSSSimulator
 
     """
     $(SIGNATURES)
-        
+
     Generates a default struct of type `SatelliteChannel` if DOA of static interference signal given in spherical coordinates. DOA is converted to Cartesian coordinates.
     """
     function SatelliteChannel(channel, enu_doa, signal, exists, interf_enu_doa::Spherical, interf_signal, interf_exists)
@@ -215,11 +228,11 @@ module GNSSSimulator
     include("doa.jl")
     include("existence.jl")
     include("gen_example_sat_channels.jl")
-    include("jammer.jl")   
+    include("jammer.jl")
     include("measurement.jl")
     include("noise.jl")
     include("phased_array_uncertainties.jl")
     include("pseudo_post_corr_signal.jl")
     include("satellite.jl")
-    
+
 end
