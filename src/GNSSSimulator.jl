@@ -9,7 +9,6 @@ module GNSSSimulator
         Parameters,
         StaticArrays,
         GNSSSignals,
-        FunctionWrappers,
         LinearAlgebra,
         Destruct
 
