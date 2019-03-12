@@ -1,4 +1,4 @@
-julia 0.6
+julia 1.0
 
 CoordinateTransformations
 Rotations
@@ -7,4 +7,5 @@ JuliennedArrays
 DocStringExtensions
 Unitful
 Parameters
-FunctionWrappers
+GNSSSignals
+Destruct

@@ -2,20 +2,19 @@
 $(SIGNATURES)
 
 Simulates post correlation measurement. It depends on:
-`sat_channels` is a struct containing the channel number, 
-    the complex signal after correlation, its DOA and a 
+`sat_channels` is a struct containing the channel number,
+    the complex signal after correlation, its DOA and a
     boolean field which is '1' if the signal exists for both
     the satellite and the inference signal;
-`attitudes` is a struct containing a 3×3 rotation matrix of 
+`attitudes` is a struct containing a 3×3 rotation matrix of
     the antenna's current rotation which can be either static
     or time-dependent and optionally noisy;
-`gain_phase_mism_and_crosstalk` provides the gain and phase 
+`gain_phase_mism_and_crosstalk` provides the gain and phase
     mismatch and crosstalk matrix over time `t`;
-`get_steer_vec` provides the steering vectors for the DOA and 
+`get_steer_vec` provides the steering vectors for the DOA and
     attitude;
 `noise_power` specifies the noise in [dB].
 """
-
 function sim_post_corr_measurement(
     sat_channels,
     attitudes,
@@ -37,14 +36,14 @@ function sim_post_corr_measurement(
             SatelliteChannelState(sat_doa, sat_signal, sat_exists, interf_doa, interf_signal, interf_exists)
         end
 
-        measurement_wo_crosstalk = reduce(hcat, 
+        measurement_wo_crosstalk = reduce(hcat,
             map(sat_channel_states) do sat_channel_state
                 sat_steering_vector = get_steer_vec(curr_attitude * sat_channel_state.doa)
                 interf_steering_vector = get_steer_vec(curr_attitude * sat_channel_state.interf_doa)
                 num_ants = length(sat_steering_vector)
                 noise = sim_noise(noise_power, num_ants)
-                sat_steering_vector .* sat_channel_state.signal .* sat_channel_state.exists .+ 
-                    interf_steering_vector .* sat_channel_state.interf_signal .* sat_channel_state.interf_exists .+ 
+                sat_steering_vector .* sat_channel_state.signal .* sat_channel_state.exists .+
+                    interf_steering_vector .* sat_channel_state.interf_signal .* sat_channel_state.interf_exists .+
                     noise
             end
         )
@@ -64,10 +63,10 @@ the intermediate frequency by `interm_freq`. The steering vectors for each DOA a
 depends on the DOA. The added white noise can be disabled by `add_noise`.
 """
 function init_sim_measurement(emitters::Vector{T}, gnss_system::S, attitude::A, get_steer_vec, sample_freq, interm_freq, add_noise::Bool = true) where {T <: AbstractEmitter, A <: Union{RotXYZ, NoisyStaticAttitude, AbstractDynamicAttitude}, S <: AbstractGNSSSystem}
-    sim_emitter_signals = map(emitter -> init_sim_emitter_signal(emitter, gnss_system, sample_freq, interm_freq), emitters)
+    sim_emitter_signals, internal_states = destruct(map(emitter -> init_sim_emitter_signal(emitter, gnss_system, sample_freq, interm_freq), emitters))
     #sim_emitter_signals = map(emitter -> func_wrapper(init_sim_emitter_signal(emitter, gnss_system, sample_freq, interm_freq)), emitters)
     init_time = 0.0s
-    num_samples -> _sim_measurement(num_samples, init_time, sim_emitter_signals, emitters, attitude, get_steer_vec, sample_freq, add_noise)
+    num_samples -> _sim_measurement(num_samples, init_time, sim_emitter_signals, emitters, attitude, get_steer_vec, sample_freq, add_noise), internal_states
 end
 
 function _sim_measurement(num_samples, time, sim_emitter_signals, emitters, attitude, get_steer_vec, sample_freq, add_noise::Bool)
@@ -80,9 +79,7 @@ function _sim_measurement(num_samples, time, sim_emitter_signals, emitters, atti
         steered_emitter_signal = transpose(get_steer_vec(rotated_doa)) .* emitter_signal .* exists
         steered_emitter_signal, next_sim_emitter_signal, internal_state
     end
-    steered_emitter_signals = map(x -> x[1], return_values)
-    next_sim_emitter_signals = map(x -> x[2], return_values)
-    internal_states = map(x -> x[3], return_values)
+    steered_emitter_signals, next_sim_emitter_signals, internal_states = destruct(return_values)
     num_ants = length(get_steer_vec([0,0,1]))
     signal = sum(steered_emitter_signals) .+ (add_noise ? gen_noise(num_ants, num_samples) * sqrt(sample_freq / 1Hz) : 0)
     num_samples -> _sim_measurement(num_samples, next_time, next_sim_emitter_signals, emitters, attitude, get_steer_vec, sample_freq, add_noise), signal, internal_states
