@@ -12,14 +12,17 @@ module GNSSSimulator
         FunctionWrappers,
         LinearAlgebra,
         Destruct
-        
+
     import Base.transpose
     import Unitful: Hz, rad, s, m, dB, °, dBHz
 
     export
         CWJammer,
+        DynamicDOA,
+        DynamicAttitude,
         SatelliteChannel,
         Satellite,
+        EmitterInternalStates,
         DynamicExistence,
         sim_attitude,
         sim_doa,

@@ -33,7 +33,7 @@ end
     gnss_system = GNSSSimulator.GPSL1()
     jammer = GNSSSimulator.CWJammer(1, CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), 0.0m / 1.0s, 20.0dB, true)
     sat = GNSSSimulator.Satellite(prn = 1, enu_doa = CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)))
-    attitude = RotXYZ(0.0, 0.0, 0.0)
+    attitude = GNSSSimulator.RotXYZ(0.0, 0.0, 0.0)
     emitters = [sat, jammer]
     get_steer_vec(doa) = [0.5, 0.5, 0.5, 0.5]
     measurement, init_internal_states = GNSSSimulator.init_sim_measurement(emitters, gnss_system, attitude, get_steer_vec, sample_freq, interm_freq, false)

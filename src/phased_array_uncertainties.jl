@@ -4,7 +4,7 @@ $(SIGNATURES)
 Simulates gain and phase mismatch and crosstalk. Returns a function which depends on time `t`.
 """
 function sim_gain_phase_mism_and_crosstalk(
-        num_ants, 
+        num_ants,
         init_crosstalk_to_direct_power,
         init_phase_mism_betw_ant_var = π / 8,
         init_gain_mism_betw_ant_var = 0.1,
@@ -33,6 +33,6 @@ Normalizes the gain and phase mismatch and crosstalk function so that the norm o
 
 """
 function normalize_gain_phase_mism_and_crosstalk(gain_and_phase_mism_and_crosstalk)
-    gain_and_phase_mism_and_crosstalk_norm = map(norm, julienne(gain_and_phase_mism_and_crosstalk, (:,*)))'
+    gain_and_phase_mism_and_crosstalk_norm = map(norm, Slices(gain_and_phase_mism_and_crosstalk, False(), True()))'
     gain_and_phase_mism_and_crosstalk ./ gain_and_phase_mism_and_crosstalk_norm
 end
