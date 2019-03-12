@@ -1,15 +1,8 @@
-image: julia:0.7
+image: julia:1.0
 
 testjob:
   before_script:
     - apt-get update && apt-get install bzip2
-    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
-    - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/ajkeller34/Unitful.jl.git"))' # Needed because the feature dBHz is not versioned yet
-    - julia -e 'using Pkg; Pkg.add(PackageSpec(url="git@git.rwth-aachen.de:nav/GNSSSignals.jl.git", rev="v0.7"))'
     - julia -e "using Pkg; Pkg.develop(PackageSpec(url=pwd()))"
   script:
     - julia -e 'using Pkg; Pkg.add("Coverage"); Pkg.test("GNSSSimulator", coverage=true);
