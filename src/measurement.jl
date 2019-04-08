@@ -81,7 +81,7 @@ function _sim_measurement(num_samples, time, sim_emitter_signals, emitters, atti
     end
     steered_emitter_signals, next_sim_emitter_signals, internal_states = destruct(return_values)
     num_ants = length(get_steer_vec([0,0,1]))
-    signal = sum(steered_emitter_signals) .+ (add_noise ? gen_noise(num_ants, num_samples) * sqrt(sample_freq / 1Hz) : 0)
+    signal = sum(steered_emitter_signals) .+ (add_noise ? gen_noise(num_ants, num_samples, sample_freq) : 0)
     num_samples -> _sim_measurement(num_samples, next_time, next_sim_emitter_signals, emitters, attitude, get_steer_vec, sample_freq, add_noise), signal, internal_states
 end
 

@@ -39,12 +39,3 @@ Calculate doppler based on the relative velocity `relative_velocity` and the fre
 function doppler(relative_velocity, center_freq)
     center_freq / SPEED_OF_LIGHT * relative_velocity
 end
-
-"""
-$(SIGNATURES)
-
-Create a random complex noise signal.
-"""
-function gen_noise(num_ants, num_samples)
-    complex.(randn(num_samples, num_ants), randn(num_samples, num_ants)) / sqrt(2)
-end

@@ -4,5 +4,7 @@
 
     # @test all(isapprox.(var(noise, 2, corrected = false), uconvertp(NoUnits, noise_power), atol = 0.5)) # in Julia v0.6
     @test all(isapprox.(var(noise, corrected = false, dims = 2), uconvertp(NoUnits, noise_power), atol = 0.5))
-end
 
+    noise = gen_noise(4, 100000, 4e6Hz)
+    @test noise' * noise / 100000 ≈ 4e6I atol = 1e5
+end

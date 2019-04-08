@@ -1,5 +1,5 @@
 @testset "Satellite L1" begin
-    cn0 = 10.0dBHz
+    cn0 = 45.0dBHz
     sample_freq = 4e6Hz
     interm_freq = 100_000Hz
     center_freq = 1_575_420_000Hz
@@ -16,6 +16,8 @@
     sat_user_distance = calc_init_sat_user_distance(sat.distance_from_earth_center, sat.enu_doa)
     code_phase = GNSSSimulator.calc_code_phase(sat_user_distance, code_freq, code_length)
     carrier_phase = GNSSSimulator.calc_carrier_phase(sat_user_distance, center_freq + doppler)
+
+    @test signal' * signal / 4000 ≈ 10^(45 / 10)
 
     @test init_internal_states.doppler ≈ doppler
     @test init_internal_states.carrier_phase ≈ carrier_phase
