@@ -27,6 +27,9 @@
     @test @inferred(GNSSSimulator.calc_code_phase(293.255132m, 1_023_000Hz, 1023)) ≈ 1 rtol = 1e-3 # 1 Chip is around 300m
 
     @test @inferred(GNSSSimulator.calc_amplitude_from_cn0(45dBHz, 1/1Hz)) ≈ 10^(45 / 20)
+
+    next_measurement, signal, internal_states = @inferred next_measurement(num_samples)
+    @test signal ≈ cis.(2π .* (interm_freq .+ doppler) ./ sample_freq .* (num_samples + 1:2 * num_samples) .+ carrier_phase) .* gen_code.(Ref(gnss_system), (num_samples + 1:2 * num_samples), code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) * 1/1Hz)
 end
 
 @testset "Satellite L5" begin

@@ -1,3 +1,34 @@
+@testset "Satellite L1" begin
+    cn0 = 10.0dBHz
+    sample_freq = 4e6Hz
+    interm_freq = 100_000Hz
+    center_freq = 1_575_420_000Hz
+    code_length = 1023
+    num_samples = 4000
+    test_range = 1:num_samples
+    gnss_system = GPSL1()
+    attitude = RotXYZ(0.0, 0.0, 0.0)
+    sat = Satellite(prn = 1, enu_doa = CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), CN0 = cn0)
+    get_steer_vec(doa) = [0.5, 0.5, 0.5, 0.5]
+    measurement, init_internal_states = GNSSSimulator.init_sim_measurement([sat], gnss_system, attitude, get_steer_vec, sample_freq, interm_freq, false)
+
+    next_measurement, signal, internal_states = @inferred measurement(num_samples)
+    doppler = calc_init_doppler(sat.distance_from_earth_center, sat.enu_doa, sat.velocity, center_freq)
+    code_freq = 1_023_000Hz + doppler * 1_023_000Hz / center_freq
+    sat_user_distance = calc_init_sat_user_distance(sat.distance_from_earth_center, sat.enu_doa)
+    code_phase = GNSSSimulator.calc_code_phase(sat_user_distance, code_freq, code_length)
+    carrier_phase = GNSSSimulator.calc_carrier_phase(sat_user_distance, center_freq + doppler)
+
+    @test init_internal_states[1].doppler ≈ doppler
+    @test init_internal_states[1].carrier_phase ≈ carrier_phase
+    @test init_internal_states[1].code_phase ≈ code_phase
+
+    @test signal ≈ [0.5, 0.5, 0.5, 0.5]' .* cis.(2π * (interm_freq + doppler) / sample_freq * test_range .+ carrier_phase) .* gen_code.(Ref(gnss_system), test_range, code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) * 1/1Hz)
+
+    next_measurement, signal, internal_states = @inferred next_measurement(num_samples)
+    @test signal ≈ [0.5, 0.5, 0.5, 0.5]' .* cis.(2π .* (interm_freq .+ doppler) ./ sample_freq .* (num_samples + 1:2 * num_samples) .+ carrier_phase) .* gen_code.(Ref(gnss_system), (num_samples + 1:2 * num_samples), code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) * 1/1Hz)
+end
+
 @testset "Post Corr Measurement" begin
     num_sats = 4
     sat_channels = [GNSSSimulator.SatelliteChannel(i, SVector{3}(LOTHARS_DOAS[:,i]), 1 * cis(pi/2), true, SVector{3}(0.0,0.0,1.0), 0.0 + 0.0im, false) for i = 1:num_sats]
