@@ -20,6 +20,7 @@ module GNSSSimulator
         DynamicDOA,
         DynamicAttitude,
         SatelliteChannel,
+        StructuralInterference,
         Satellite,
         EmitterInternalStates,
         DynamicExistence,
@@ -154,9 +155,23 @@ module GNSSSimulator
     } <: AbstractEmitter
         prn::Int
         enu_doa::T
-        velocity::typeof(1.0m / 1.0s) = 14_000.0m / 3.6s
+        velocity::typeof(1.0m/s) = 14_000.0m / 3.6s
         CN0::typeof(1.0dBHz) = 45.0dBHz
         distance_from_earth_center::typeof(1.0m) = 26_560_000.0m
+        exists::E = true
+    end
+
+    @with_kw struct StructuralInterference{
+        T <: Union{SVector{3, R}, AbstractDynamicDOA} where R<:Real,
+        E <: Union{Bool, AbstractDynamicExistence},
+        ST <: Union{SVector{3, R}, AbstractDynamicDOA} where R<:Real,
+        SE <: Union{Bool, AbstractDynamicExistence}
+    } <: AbstractEmitter
+        enu_doa::T
+        sat::Satellite{ST,SE}
+        signal_amplification::typeof(1.0dB) = -3dB
+        added_relative_velocity::typeof(1.0m/s) = 0.0m/s
+        added_signal_path::typeof(1.0m) = 10m
         exists::E = true
     end
 
@@ -236,5 +251,6 @@ module GNSSSimulator
     include("phased_array_uncertainties.jl")
     include("pseudo_post_corr_signal.jl")
     include("satellite.jl")
+    include("structural_interference.jl")
 
 end

@@ -1,5 +1,5 @@
 const EARTH_RADIUS = 6_360_000m
-const SPEED_OF_LIGHT = 299_792_458m / 1s
+const SPEED_OF_LIGHT = 299_792_458m/s
 
 """
 $(SIGNATURES)
