@@ -15,6 +15,6 @@ function _sim_cw_jammer_signal(num_samples, gnss_system, carrier_phase, doppler,
     carrier_freq_with_doppler = interm_freq + doppler
     next_carrier_phase = GNSSSignals.calc_carrier_phase(num_samples, carrier_freq_with_doppler, carrier_phase, sample_freq)
     sampled_carrier = gen_carrier.(1:num_samples, carrier_freq_with_doppler, carrier_phase, sample_freq)
-    signal = sampled_carrier .* amplitude
+    signal = complex.(randn(num_samples), randn(num_samples)) ./ sqrt(2) .* sampled_carrier .* amplitude
     num_samples -> _sim_cw_jammer_signal(num_samples, gnss_system, next_carrier_phase, doppler, sample_freq, amplitude, interm_freq), signal, EmitterInternalStates(doppler, carrier_phase, NaN)
 end
