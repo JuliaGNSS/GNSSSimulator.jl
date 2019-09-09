@@ -1,19 +1,35 @@
+abstract type AbstractExistence end
+
+struct DynamicExistence <: AbstractExistence
+    existence::Vector{Bool}
+    time::typeof(1.0s)
+    sample_freq::typeof(1.0Hz)
+end
+
 """
 $(SIGNATURES)
 
-Simulates the static existence of either a satellite signal or a interference signal. Type: Boolean ('1' if signal exists).
+Simulates the static existence of either a satellite signal or a interference signal. Type: Boolean (true if signal exists).
 """
-function sim_existence(t, existence::Bool)
+function propagate(existence::Bool, Δt)
+    existence
+end
+
+function get_existence(existence::Bool)
     existence
 end
 
 """
 $(SIGNATURES)
 
-Simulates the dynamic existence of either a satellite signal or a interference signal. Type: Boolean ('1' if signal exists).
+Simulates the dynamic existence of either a satellite signal or a interference signal. Type: Boolean (true if signal exists).
 If time index exceeds data length, last available value is returned
 """
-function sim_existence(t, data::DynamicExistence)
-    index = floor(Int, t * data.sample_freq) + 1
-    index < size(data.existence, 1) ? data.existence[index] : data.existence[end]
+function propagate(existence::DynamicExistence, Δt)
+    next_time = existence.time + Δt
+    DynamicExistence(existence.existence, next_time, existence.sample_freq)
+end
+
+function get_existence(existence::DynamicExistence)
+    get_sampled_value(existence.time, existence.sample_freq, existence.existence)
 end

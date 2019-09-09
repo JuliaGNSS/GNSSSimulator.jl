@@ -5,13 +5,14 @@ Simulate GNSS signals, jammer, spoofer, multipath.
 
 ## Features
 
- * Phased array simulation:
+ * GNSS signals
+ * Jammers
+ * Structural interference (spoofer, multipath)
+ * Phased arrays:
   * Gain and phase mismatches
   * Crosstalk effects
   * Steering vectors
   * Attitude
- * Pseudo satellite amplitude and phase
- * Standard deviation for variation over time
 
 ## Getting started
 
@@ -24,19 +25,17 @@ pkg> add git@git.rwth-aachen.de:nav/GNSSSimulator.jl.git
 ## Usage
 
 ```julia
-using GNSSSimulator, CoordinateTransformations
-using GNSSSimulator: Hz, m, s, dB
-sample_freq = 4e6Hz
-interm_freq = 100_000Hz
-gnss_system = GNSSSimulator.GPSL1()
-jammer = GNSSSimulator.CWJammer(1, CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), 0.0m / 1.0s, 20.0dB, true)
-sat = GNSSSimulator.Satellite(prn = 1, enu_doa = CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)))
-attitude = GNSSSimulator.RotXYZ(0.0, 0.0, 0.0)
-emitters = [sat, jammer]
-get_steer_vec(doa) = [0.5, 0.5, 0.5, 0.5]
-measurement, init_internal_states = GNSSSimulator.init_sim_measurement(emitters, gnss_system, attitude, get_steer_vec, sample_freq, interm_freq, false)
-
-next_measurement, signal1, internal_states = measurement(4000)
+using GNSSSimulator, Rotations
+using GNSSSimulator: Hz, dBHz, GPSL1
+gpsl1 = GPSL1()
+sample_freq = 2e6Hz
+sat = ConstantDopplerSatellite(1, gpsl1, carrier_doppler = 1000.0Hz, carrier_phase = π / 2, code_phase = 100.0, cn0 = 45dBHz)
+emitters = (sat,)
+receiver = Receiver(1.0, RotXYZ(0.0, 0.0, 0.0), sqrt(sample_freq / 1Hz))
+received_signal = ReceivedSignal(emitters, receiver)
+measurement1 = get_measurement(received_signal)
+next_received_signal = propagate(received_signal, 1/sample_freq)
+measurement2 = get_measurement(next_received_signal)
 ```
 
 ## Todo

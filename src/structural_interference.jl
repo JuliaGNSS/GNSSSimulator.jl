@@ -1,14 +1,57 @@
-"""
-$(SIGNATURES)
+abstract type AbstractStructuralInterference <: AbstractEmitter end
 
-Simulates a structural interference for one satellite signal with satellite parameters `sat`, GNSS system `gnss_system`, sample frequency `sample_freq` and intermediate frequency `interm_freq`.
-Returns a function which is dependent on the number of samples `num_samples`.
-"""
-function init_sim_emitter_signal(interference::StructuralInterference, gnss_system::S, sample_freq, interm_freq) where S <: AbstractGNSSSystem
-    init_sat_user_distance = calc_init_sat_user_distance(interference.sat.distance_from_earth_center, interference.sat.enu_doa)
-    init_doppler = calc_init_doppler(interference.sat.distance_from_earth_center, interference.sat.enu_doa, interference.sat.velocity, gnss_system.center_freq) + interference.added_relative_velocity / SPEED_OF_LIGHT * gnss_system.center_freq
-    init_carrier_phase = calc_carrier_phase(init_sat_user_distance + interference.added_signal_path, gnss_system.center_freq + init_doppler)
-    init_code_phase = calc_code_phase(init_sat_user_distance + interference.added_signal_path, gnss_system.code_freq + init_doppler * gnss_system.code_freq / gnss_system.center_freq, gnss_system.code_length)
-    init_amplitude = calc_amplitude_from_cn0(interference.sat.CN0 + interference.signal_amplification, 1/1Hz) # Assumes sample_freq == bandwidth
-    num_samples -> _sim_sat_signal(num_samples, gnss_system, init_code_phase, init_carrier_phase, init_doppler, sample_freq, interm_freq, init_amplitude, interference.sat.prn), EmitterInternalStates(init_doppler, init_carrier_phase, init_code_phase)
+struct ConstantDopplerStructuralInterference{
+    S <: ConstantDopplerSatellite
+} <: AbstractStructuralInterference
+    sat::S
 end
+
+function ConstantDopplerStructuralInterference(
+        sat::ConstantDopplerSatellite,
+        signal_amplification;
+        added_carrier_doppler = NaN*Hz,
+        added_carrier_phase = NaN,
+        added_code_phase = NaN,
+        exists = true,
+        doa = SVector(0,0,1),
+        added_relative_velocity = 0.0m/s,
+        added_signal_path = 0.0m
+    )
+    if isnan(added_carrier_doppler)
+        carrier_doppler = get_carrier_doppler(sat) + added_relative_velocity / SPEED_OF_LIGHT * sat.system.center_freq
+    else
+        carrier_doppler = get_carrier_doppler(sat) + added_carrier_doppler
+    end
+    if isnan(added_carrier_phase)
+        carrier_phase = mod2pi(get_carrier_phase(sat) + calc_carrier_phase(added_signal_path, sat.system.center_freq + carrier_doppler))
+    else
+        carrier_phase = mod2pi(get_carrier_phase(sat) + added_carrier_phase)
+    end
+    if isnan(added_code_phase)
+        code_doppler = carrier_doppler * sat.system.code_freq / sat.system.center_freq
+        code_phase = mod(sat.code_phase + calc_code_phase(added_signal_path, sat.system.code_freq + code_doppler, sat.system.code_length), sat.system.code_length)
+    else
+        code_phase = mod(sat.code_phase + added_code_phase, sat.system.code_length)
+    end
+    amplitude = get_amplitude(sat) * sqrt(uconvertp(NoUnits, signal_amplification))
+    sat = ConstantDopplerSatellite(get_prn(sat), get_system(sat), carrier_doppler, carrier_phase, code_phase, amplitude, exists, doa)
+    ConstantDopplerStructuralInterference(sat)
+end
+
+function propagate(si::ConstantDopplerStructuralInterference, Δt)
+    ConstantDopplerStructuralInterference(propagate(si.sat, Δt))
+end
+
+function get_signal(si::AbstractStructuralInterference, attitude, get_steer_vec)
+    get_signal(si.sat, attitude, get_steer_vec)
+end
+
+get_system(si::ConstantDopplerStructuralInterference) = get_system(si.sat)
+get_doa(si::ConstantDopplerStructuralInterference) = get_doa(si.sat)
+get_existence(si::ConstantDopplerStructuralInterference) = get_existence(si.sat)
+get_carrier_doppler(si::ConstantDopplerStructuralInterference) = get_carrier_doppler(si.sat)
+get_code_doppler(si::ConstantDopplerStructuralInterference) = get_code_doppler(si.sat)
+get_carrier_phase(si::ConstantDopplerStructuralInterference) = get_carrier_phase(si.sat)
+get_code_phase(si::ConstantDopplerStructuralInterference) = get_code_phase(si.sat)
+get_prn(si::ConstantDopplerStructuralInterference) = get_prn(si.sat)
+get_amplitude(si::ConstantDopplerStructuralInterference) = get_amplitude(si.sat)

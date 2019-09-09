@@ -3,9 +3,7 @@ julia 1.0
 CoordinateTransformations
 Rotations
 StaticArrays
-JuliennedArrays
 DocStringExtensions
 Unitful
-Parameters
 GNSSSignals
-Destruct
+Parameters

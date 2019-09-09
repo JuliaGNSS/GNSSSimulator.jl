@@ -1,8 +1,18 @@
 @testset "Existence" begin
-    static_exist = true 
-    dyn_exist = GNSSSimulator.DynamicExistence([false; true; false; true], 1Hz)
+    @testset "Static Existence" begin
+        @test propagate(true, 1s) == true
+        @test propagate(false, 1s) == false
+        @test get_existence(true) == true
+        @test get_existence(false) == false
+    end
+    @testset "Dynamic Existence" begin
+        existences = [true, false, true, false, true, false]
+        dynamic_existence = DynamicExistence(existences, 0.0s, 1.0Hz)
 
-    @test true == sim_existence(3s, static_exist)
-    @test true == sim_existence(1s, dyn_exist)
-    @test true == sim_existence(5s, dyn_exist) # time exceeds data length --> return last available value
+        next_dynamic_existence = propagate(dynamic_existence, 1s)
+        @test next_dynamic_existence == DynamicExistence(existences, 1.0s, 1.0Hz)
+        @test get_existence(next_dynamic_existence) == false
+        @test get_existence(propagate(next_dynamic_existence, 3s)) == true
+
+    end
 end

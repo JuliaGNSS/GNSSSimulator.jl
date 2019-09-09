@@ -1,61 +1,32 @@
-@testset "Satellite L1" begin
-    cn0 = 45.0dBHz
-    sample_freq = 4e6Hz
-    interm_freq = 100_000Hz
-    center_freq = 1_575_420_000Hz
-    code_length = 1023
-    num_samples = 4000
-    test_range = 1:num_samples
-    gnss_system = GPSL1()
-    attitude = RotXYZ(0.0, 0.0, 0.0)
-    sat = Satellite(prn = 1, enu_doa = CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), CN0 = cn0)
-    measurement, init_internal_states = @inferred GNSSSimulator.init_sim_emitter_signal(sat, gnss_system, sample_freq, interm_freq)
-    next_measurement, signal, internal_states = @inferred measurement(num_samples)
-    doppler = calc_init_doppler(sat.distance_from_earth_center, sat.enu_doa, sat.velocity, center_freq)
-    code_freq = 1_023_000Hz + doppler * 1_023_000Hz / center_freq
-    sat_user_distance = calc_init_sat_user_distance(sat.distance_from_earth_center, sat.enu_doa)
-    code_phase = GNSSSimulator.calc_code_phase(sat_user_distance, code_freq, code_length)
-    carrier_phase = GNSSSimulator.calc_carrier_phase(sat_user_distance, center_freq + doppler)
+@testset "Satellite" begin
+    @testset "Auxiliarly functions" begin
+        doa = Spherical(1.0, 0.0, π / 2) # Zenith
+        distance_from_earth_center = EARTH_RADIUS + 40000m
+        distance = GNSSSimulator.calc_sat_user_distance(distance_from_earth_center, doa)
 
-    @test signal' * signal / 4000 ≈ 10^(45 / 10)
+        @test distance == 40000m
 
-    @test init_internal_states.doppler ≈ doppler
-    @test init_internal_states.carrier_phase ≈ carrier_phase
-    @test init_internal_states.code_phase ≈ code_phase
+        @test GNSSSimulator.calc_carrier_phase(0m, 20Hz) == 0
 
-    @test signal ≈ cis.(2π * (interm_freq + doppler) / sample_freq * test_range .+ carrier_phase) .* gen_code.(Ref(gnss_system), test_range, code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) * 1/1Hz)
+        @test GNSSSimulator.calc_doppler(distance_from_earth_center, doa, 14_000.0m / 3.6s, 1.157542e6Hz) ≈ 0Hz rtol = 1
+    end
 
-    @test @inferred(GNSSSimulator.calc_code_phase(0m, 1_023_000Hz, 1023)) == 0
-    @test @inferred(GNSSSimulator.calc_code_phase(293.255132m, 1_023_000Hz, 1023)) ≈ 1 rtol = 1e-3 # 1 Chip is around 300m
+    @testset "Satellite signal" begin
+        gpsl1 = GPSL1()
+        sat = ConstantDopplerSatellite(1, gpsl1, carrier_doppler = 1000.0Hz, carrier_phase = π / 2, code_phase = 100.0, cn0 = 45dBHz)
+        next_sat = propagate(sat, 1/2e6Hz)
+        @test GNSSSimulator.get_carrier_doppler(next_sat) == 1000Hz
+        @test GNSSSimulator.get_code_doppler(next_sat) ≈ 1000Hz / 1540
+        @test GNSSSimulator.get_carrier_phase(next_sat) ≈ π / 2 + 2π * 1000Hz / 2e6Hz
+        @test GNSSSimulator.get_code_phase(next_sat) ≈ 100 + 1000Hz / 1540 / 2e6Hz
+        @test GNSSSimulator.get_existence(next_sat) == true
+        @test GNSSSimulator.get_amplitude(next_sat) == 10^(45 / 20)
+        @test GNSSSimulator.get_prn(next_sat) == 1
+        @test GNSSSimulator.get_system(next_sat) == gpsl1
 
-    @test @inferred(GNSSSimulator.calc_amplitude_from_cn0(45dBHz, 1/1Hz)) ≈ 10^(45 / 20)
+        get_steer_vec(doa, attitude) = 1 # No steering vector
 
-    next_measurement, signal, internal_states = @inferred next_measurement(num_samples)
-    @test signal ≈ cis.(2π .* (interm_freq .+ doppler) ./ sample_freq .* (num_samples + 1:2 * num_samples) .+ carrier_phase) .* gen_code.(Ref(gnss_system), (num_samples + 1:2 * num_samples), code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) * 1/1Hz)
-end
-
-@testset "Satellite L5" begin
-    cn0 = 10.0dBHz
-    sample_freq = 40e6Hz
-    interm_freq = 100Hz
-    center_freq = 1_176_450_000Hz
-    code_length = 102300
-    num_samples = 400000
-    test_range = 1:num_samples
-    gnss_system = GPSL5()
-    attitude = RotXYZ(0.0, 0.0, 0.0)
-    sat = Satellite(prn = 1, enu_doa = CartesianFromSpherical()(Spherical(1.0, 0.0, 0.0)), CN0 = cn0)
-    measurement, init_internal_states = @inferred GNSSSimulator.init_sim_emitter_signal(sat, gnss_system, sample_freq, interm_freq)
-    next_measurement, signal, internal_states = @inferred measurement(num_samples)
-    doppler = calc_init_doppler(sat.distance_from_earth_center, sat.enu_doa, sat.velocity, center_freq)
-    code_freq = 10.23MHz + doppler * 10.23MHz / center_freq
-    sat_user_distance = calc_init_sat_user_distance(sat.distance_from_earth_center, sat.enu_doa)
-    code_phase = GNSSSimulator.calc_code_phase(sat_user_distance, code_freq, code_length)
-    carrier_phase = GNSSSimulator.calc_carrier_phase(sat_user_distance, center_freq + doppler)
-
-    @test init_internal_states.doppler ≈ doppler
-    @test init_internal_states.carrier_phase ≈ carrier_phase
-    @test init_internal_states.code_phase ≈ code_phase
-
-    @test signal ≈ cis.(2π * (interm_freq + doppler) / sample_freq * test_range .+ carrier_phase) .* gen_code.(Ref(gnss_system), test_range, code_freq, code_phase, sample_freq, 1) .* sqrt(linear(cn0) * 1/1Hz)
+        signal = get_signal(next_sat, nothing, get_steer_vec)
+        @test signal ≈ cis(π / 2 + 2π * 1000Hz / 2e6Hz) * gpsl1.codes[1 + floor(Int, 100 + 1000Hz / 1540 / 2e6Hz), 1] * 10^(45 / 20)
+    end
 end

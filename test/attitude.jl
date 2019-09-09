@@ -1,40 +1,45 @@
 @testset "Attitude" begin
     @testset "Static Attitude" begin
-        @test STAT_ATT == sim_attitude(3s, STAT_ATT) 
+        @test propagate(RotXYZ(1.0, 2.0, 3.0), 1ms) == RotXYZ(1.0, 2.0, 3.0)
 
-        array_struct_noisy_stat_att = [GNSSSimulator.NoisyStaticAttitude(STAT_ATT, STD_ROLL, STD_PITCH, STD_YAW) for i = 1:1000]
-        meas_static_std_roll = std([sim_attitude(0s, array_struct_noisy_stat_att[i]).theta1 for i = 1:length(array_struct_noisy_stat_att)])
-        meas_static_std_pitch = std([sim_attitude(0s, array_struct_noisy_stat_att[i]).theta2 for i = 1:length(array_struct_noisy_stat_att)])
-        meas_static_std_yaw = std([sim_attitude(0s, array_struct_noisy_stat_att[i]).theta3 for i = 1:length(array_struct_noisy_stat_att)])
+        noisy_static_attitude = NoisyStaticAttitude(RotXYZ(1.0, 2.0, 3.0), 0.1, 0.2, 0.3)
+        next_noisy_static_attitude = propagate(noisy_static_attitude, 1ms)
+        @test next_noisy_static_attitude.base_attitude == RotXYZ(1.0, 2.0, 3.0)
 
-        @test meas_static_std_roll ≈ STD_ROLL atol = 0.001
-        @test meas_static_std_pitch ≈ STD_PITCH atol = 0.001
-        @test meas_static_std_yaw ≈ STD_YAW atol = 0.003
+        @test std([get_attitude(propagate(noisy_static_attitude, 1ms)).theta1 for i = 1:1000]) ≈ 0.1 atol = 0.03
+        @test std([get_attitude(propagate(noisy_static_attitude, 1ms)).theta2 for i = 1:1000]) ≈ 0.2 atol = 0.03
+        @test std([get_attitude(propagate(noisy_static_attitude, 1ms)).theta3 for i = 1:1000]) ≈ 0.3 atol = 0.03
+
     end
 
     @testset "Dynamic Attitude" begin
-        struct_dyn_att = GNSSSimulator.DynamicAttitude(DYN_ATT, 1Hz)
-        struct_lin_dyn_att = GNSSSimulator.LinearDynamicAttitude(STAT_ATT, ΔROLL_PER_S, ΔPITCH_PER_S, ΔYAW_PER_S)
+        attitudes = [RotXYZ(0.1*i, 0.1*i+0.1, 0.1*i+0.2) for i = 0:10]
+        dynamic_attitude = DynamicAttitude(attitudes, 0.0s, 1Hz)
+        next_dynamic_attitude = propagate(dynamic_attitude, 1s)
+        forward_dynamic_attitude = propagate(dynamic_attitude, 20s)
+        linear_dynamic_attitude = LinearDynamicAttitude(RotXYZ(0.0, 0.1, 0.2), 0.1rad/s, 0.1rad/s, 0.1rad/s)
+        next_linear_dynamic_attitude = propagate(linear_dynamic_attitude, 1s)
 
-        @test DYN_ATT[3] == sim_attitude(2s, struct_dyn_att)
-        @test DYN_ATT[3] == sim_attitude(5s, struct_dyn_att) # time exceeds data length --> return last available value 
-        @test DYN_ATT[3] ≈ sim_attitude(2s, struct_lin_dyn_att)
+        @test next_dynamic_attitude == DynamicAttitude(attitudes, 1.0s, 1Hz)
+        @test get_attitude(next_dynamic_attitude) ≈ RotXYZ(0.1, 0.2, 0.3)
+        @test get_attitude(forward_dynamic_attitude) == RotXYZ(1.0, 1.1, 1.2)
+        @test next_linear_dynamic_attitude.attitude ≈ RotXYZ(0.1, 0.2, 0.3)
+        @test get_attitude(next_linear_dynamic_attitude) ≈ RotXYZ(0.1, 0.2, 0.3)
 
-        array_struct_noisy_dyn_att = [GNSSSimulator.NoisyDynamicAttitude(DYN_ATT, 1Hz, STD_ROLL, STD_PITCH, STD_YAW) for i = 1:1000]
-        meas_dyn_std_roll = std([sim_attitude(2s, array_struct_noisy_dyn_att[i]).theta1 for i = 1:length(array_struct_noisy_dyn_att)])
-        meas_dyn_std_pitch = std([sim_attitude(2s, array_struct_noisy_dyn_att[i]).theta2 for i = 1:length(array_struct_noisy_dyn_att)])
-        meas_dyn_std_yaw = std([sim_attitude(2s, array_struct_noisy_dyn_att[i]).theta3 for i = 1:length(array_struct_noisy_dyn_att)])
+        attitudes2 = [RotXYZ(0.0, 0.1, 0.2) for i = 0:10]
+        noisy_dynamic_attitude = NoisyDynamicAttitude(attitudes2, 0.0s, 1Hz, 0.1, 0.2, 0.3)
+        next_noisy_dynamic_attitude = propagate(noisy_dynamic_attitude, 1s)
+        @test next_noisy_dynamic_attitude.attitudes == attitudes2
+        noisy_linear_dynamic_attitude = NoisyLinearDynamicAttitude(RotXYZ(0.0, 0.1, 0.2), 0.0rad/s, 0.0rad/s, 0.0rad/s, 0.1, 0.2, 0.3)
+        next_noisy_linear_dynamic_attitude = propagate(noisy_linear_dynamic_attitude, 1s)
+        @test next_noisy_linear_dynamic_attitude.base_attitude ≈ RotXYZ(0.0, 0.1, 0.2)
 
-        array_struct_lin_noisy_dyn_att = [GNSSSimulator.NoisyLinearDynamicAttitude(STAT_ATT, ΔROLL_PER_S, ΔPITCH_PER_S, ΔYAW_PER_S, STD_ROLL, STD_PITCH, STD_YAW) for i = 1:1000]
-        meas_lin_dyn_std_roll = std([sim_attitude(2s, array_struct_noisy_dyn_att[i]).theta1 for i = 1:length(array_struct_noisy_dyn_att)])
-        meas_lin_dyn_std_pitch = std([sim_attitude(2s, array_struct_noisy_dyn_att[i]).theta2 for i = 1:length(array_struct_noisy_dyn_att)])
-        meas_lin_dyn_std_yaw = std([sim_attitude(2s, array_struct_noisy_dyn_att[i]).theta3 for i = 1:length(array_struct_noisy_dyn_att)]) 
+        @test std([get_attitude(propagate(noisy_dynamic_attitude, 1ms)).theta1 for i = 1:1000]) ≈ 0.1 atol = 0.03
+        @test std([get_attitude(propagate(noisy_dynamic_attitude, 1ms)).theta2 for i = 1:1000]) ≈ 0.2 atol = 0.03
+        @test std([get_attitude(propagate(noisy_dynamic_attitude, 1ms)).theta3 for i = 1:1000]) ≈ 0.3 atol = 0.03
 
-        @test meas_dyn_std_roll ≈ STD_ROLL atol = 0.002
-        @test meas_dyn_std_pitch ≈ STD_PITCH atol = 0.002
-        @test meas_dyn_std_yaw ≈ STD_YAW atol = 0.003
-        @test meas_lin_dyn_std_roll ≈ STD_ROLL atol = 0.002
-        @test meas_lin_dyn_std_pitch ≈ STD_PITCH atol = 0.002
-        @test meas_lin_dyn_std_yaw ≈ STD_YAW atol = 0.002
+        @test std([get_attitude(propagate(noisy_linear_dynamic_attitude, 1ms)).theta1 for i = 1:1000]) ≈ 0.1 atol = 0.03
+        @test std([get_attitude(propagate(noisy_linear_dynamic_attitude, 1ms)).theta2 for i = 1:1000]) ≈ 0.2 atol = 0.03
+        @test std([get_attitude(propagate(noisy_linear_dynamic_attitude, 1ms)).theta3 for i = 1:1000]) ≈ 0.3 atol = 0.03
     end
 end

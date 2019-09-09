@@ -1,10 +1,29 @@
 @testset "Jammer" begin
-    jammer_power = 10.0dB
-    sample_freq = 4e6Hz
-    interm_freq = 100_000Hz
-    gnss_system = GPSL1()
-    jammer = CWJammer(1, CartesianFromSpherical()(Spherical(0.0, 0.0, 1.0)), 0.0m / 1s, jammer_power, true)
-    measurement, init_internal_states = @inferred GNSSSimulator.init_sim_emitter_signal(jammer, gnss_system, sample_freq, interm_freq)
-    next_measurement, signal, internal_states = @inferred measurement(100)
-    @test signal ≈ cis.(2π * interm_freq / sample_freq * (1:100)) * sqrt(uconvertp(NoUnits, jammer_power) * sample_freq / 1Hz)
+    @testset "CW Jammer" begin
+        jammer = CWJammer(1, 100.0Hz, 1.0, 10.0, true, SVector(0.0, 0.0, 1.0))
+
+        next_jammer = propagate(jammer, 1μs)
+        @test GNSSSimulator.get_carrier_phase(next_jammer) ≈ 1.0 + 2π * 100.0Hz * 1μs
+        @test GNSSSimulator.get_carrier_doppler(next_jammer) == 100.0Hz
+        @test GNSSSimulator.get_amplitude(next_jammer) == 10
+        @test GNSSSimulator.get_existence(next_jammer) == true
+        @test GNSSSimulator.get_doa(next_jammer) == SVector(0.0, 0.0, 1.0)
+
+        get_steer_vec(doa, attitude) = 1 # No steering vector
+        @test get_signal(jammer, nothing, get_steer_vec) ≈ cis(1.0) * 10
+    end
+
+    @testset "Noise Jammer" begin
+        noise = randn(ComplexF64)
+        jammer = NoiseJammer(1, noise, 10.0, true, SVector(0.0, 0.0, 1.0))
+
+        next_jammer = propagate(jammer, 1μs)
+        @test GNSSSimulator.get_noise(jammer) == noise
+        @test GNSSSimulator.get_amplitude(next_jammer) == 10
+        @test GNSSSimulator.get_existence(next_jammer) == true
+        @test GNSSSimulator.get_doa(next_jammer) == SVector(0.0, 0.0, 1.0)
+
+        get_steer_vec(doa, attitude) = 1 # No steering vector
+        @test get_signal(jammer, nothing, get_steer_vec) == noise * 10
+    end
 end
