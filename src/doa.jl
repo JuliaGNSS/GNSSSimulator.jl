@@ -1,5 +1,3 @@
-sph2cart = CartesianFromSpherical()
-
 abstract type AbstractDOA end
 
 struct DynamicDOA{T <: Vector{SVector{3, R}} where R <: Real} <: AbstractDOA

@@ -44,7 +44,8 @@ export
                           0.4226    0.8480    0.6428    0.5000    0.7071    0.2588    0.5000    0.9962    0.7660    0.4226    0.2588]
 
     propagate(val::Number, Δt) = val
-    cart2sph = SphericalFromCartesian()
+    const cart2sph = SphericalFromCartesian()
+    const sph2cart = CartesianFromSpherical()
 
     function get_sampled_value(time, sample_freq, values)
         index = floor(Int, time * sample_freq) + 1
