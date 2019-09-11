@@ -30,6 +30,7 @@ export
     ConstantDopplerStructuralInterference,
     CWJammer,
     NoiseJammer,
+    Noise,
     Receiver,
     ReceivedSignal,
     get_attitude,
@@ -37,7 +38,8 @@ export
     get_existence,
     get_signal,
     get_gain_phase_mism_crosstalk,
-    get_measurement
+    get_measurement,
+    get_noise
 
     const LOTHARS_DOAS = [0.6409    0.5260   -0.6634    0.8138   -0.5000   -0.9513   -0.6634         0    0.4924   -0.3100         0;
                          -0.6409   -0.0646    0.3830   -0.2962   -0.5000   -0.1677   -0.5567   -0.0872    0.4132    0.8517   -0.9659;
@@ -60,6 +62,7 @@ export
     include("structural_interference.jl")
     include("jammer.jl")
     include("gain_phase_mism_crosstalk.jl")
+    include("noise.jl")
     include("receiver.jl")
     include("measurement.jl")
 end

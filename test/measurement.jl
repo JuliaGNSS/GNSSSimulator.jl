@@ -23,8 +23,6 @@
         @test GNSSSimulator.get_prn(next_sat) == 1
         @test GNSSSimulator.get_system(next_sat) == gpsl1
 
-        @test next_received_signal.receiver == receiver
-
         measurement = @inferred get_measurement(next_received_signal, get_steer_vec)
         @test measurement ≈ cis(π / 2 + 2π * 1000Hz / 2e6Hz) * gpsl1.codes[1 + floor(Int, 100 + 1000Hz / 1540 / 2e6Hz), 1] * 10^(45 / 20) +
             cis(π / 2 + 2π * 500Hz / 2e6Hz) * gpsl1.codes[1 + floor(Int, 50 + 500Hz / 1540 / 2e6Hz), 2] * 10^(45 / 20)
@@ -38,7 +36,7 @@
         emitters = (sat,)
         receiver = Receiver(1.0, RotXYZ(0.0, 0.0, 0.0), sqrt(bandwidth * 1.0/Hz))
         received_signal = ReceivedSignal(emitters, receiver)
-        measurements = [get_measurement(received_signal, get_steer_vec) for i = 1:1000]
+        measurements = [get_measurement(propagate(received_signal, 1μs), get_steer_vec) for i = 1:1000]
         @test measurements'measurements / 1000 ≈ 2e6 atol = 0.03e6
     end
 end
