@@ -1,4 +1,4 @@
-using Test, GNSSSimulator, Rotations, CoordinateTransformations, StaticArrays, GNSSSignals, Random, Statistics, Unitful, LinearAlgebra
+using Test, GNSSSimulator, Rotations, CoordinateTransformations, StaticArrays, GNSSSignals, Random, Statistics, Unitful, LinearAlgebra, PhasedArray
 import Unitful: dB, Hz, kHz, MHz, GHz, dBHz, m, s, rad, °, ms, μs
 
 

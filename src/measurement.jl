@@ -6,11 +6,15 @@ struct ReceivedSignal{
     receiver::R
 end
 
-function get_measurement(state::ReceivedSignal, get_steer_vec = (doa, attitude) -> 1)
+function get_measurement(state::ReceivedSignal, manifold)
     attitude = get_attitude(state.receiver)
-    signal = mapreduce(emitter -> get_signal(emitter, attitude, get_steer_vec), +, state.emitters)
+    signal = mapreduce(emitter -> get_signal(emitter, attitude, manifold), +, state.emitters)
     noise = get_noise(state.receiver)
     C = get_gain_phase_mism_crosstalk(state.receiver)
+    _get_measurement(C, signal, noise)
+end
+
+function _get_measurement(C, signal, noise) # Extra function for optimization?!
     C * (signal + noise)
 end
 

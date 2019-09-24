@@ -8,7 +8,8 @@ module GNSSSimulator
         StaticArrays,
         GNSSSignals,
         LinearAlgebra,
-        Parameters
+        Parameters,
+        PhasedArray
 
     import Base.transpose
     import Unitful: Hz, rad, s, m, dB, °, dBHz
