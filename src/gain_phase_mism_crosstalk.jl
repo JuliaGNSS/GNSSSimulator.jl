@@ -1,10 +1,10 @@
 abstract type AbstractGainPhaseMismCrosstalk end
 
-function propagate(gain_phase_mism_crosstalk::SMatrix, Δt)
+@inline function propagate(gain_phase_mism_crosstalk, Δt, rng)
     gain_phase_mism_crosstalk
 end
 
-function get_gain_phase_mism_crosstalk(gain_phase_mism_crosstalk)
+@inline function get_gain_phase_mism_crosstalk(gain_phase_mism_crosstalk)
     gain_phase_mism_crosstalk
 end
 
@@ -15,6 +15,6 @@ Normalizes the gain and phase mismatch and crosstalk function so that the norm o
 
 """
 function normalize_gain_phase_mism_and_crosstalk(gain_and_phase_mism_and_crosstalk)
-    gain_and_phase_mism_and_crosstalk_norm = map(norm, Slices(gain_and_phase_mism_and_crosstalk, False(), True()))'
+    gain_and_phase_mism_and_crosstalk_norm = map(norm, eachcol(gain_and_phase_mism_and_crosstalk))'
     gain_and_phase_mism_and_crosstalk ./ gain_and_phase_mism_and_crosstalk_norm
 end

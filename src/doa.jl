@@ -22,7 +22,7 @@ $(SIGNATURES)
 
 Simulates the direction of arrival of a satellite signal or interference signal which is static over time and given in Cartesian coordinates.
 """
-function propagate(doa::SVector, Δt)
+function propagate(doa::SVector, Δt, rng)
     doa
 end
 
@@ -36,7 +36,7 @@ $(SIGNATURES)
 
 Simulates the direction of arrival of a satellite signal or interference signal which is static over time and given in Spherical coordinates.
 """
-function propagate(doa::Spherical, Δt)
+function propagate(doa::Spherical, Δt, rng)
     doa
 end
 
@@ -51,7 +51,7 @@ Simulates the direction of arrival of a satellite signal or interference signal 
 If time index exceeds data length, last available value is returned
 
 """
-function propagate(doa::DynamicDOA, Δt)
+function propagate(doa::DynamicDOA, Δt, rng)
     next_time = doa.time + Δt
     DynamicDOA(doa.doas, next_time, doa.sample_freq)
 end
@@ -65,7 +65,7 @@ $(SIGNATURES)
 
 Simulates the direction of arrival of a satellite signal or interference which is linearly changing over time and given in Spherical coordinates.
 """
-function propagate(doa::LinearDynamicDOA, Δt)
+function propagate(doa::LinearDynamicDOA, Δt, rng)
     next_doa = Spherical(doa.doa.r, doa.doa.θ + doa.Δazimuth * Δt, doa.doa.ϕ + doa.Δelevation * Δt)
     LinearDynamicDOA(next_doa, doa.Δazimuth, doa.Δelevation)
 end

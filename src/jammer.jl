@@ -1,62 +1,79 @@
 abstract type AbstractJammer <: AbstractEmitter end
 
+struct CWJammerPhase{T}
+    carrier::T
+end
+
 struct CWJammer{
-    T <: Union{SVector{3}, AbstractDOA},
-    E <: Union{Bool, AbstractExistence},
+    D <: Union{SVector{3}, AbstractDOA},
+    E <: Union{Bool, AbstractExistence}
 } <: AbstractJammer
     id::Int
-    carrier_doppler::typeof(1.0Hz)
-    carrier_phase::Float64
+    doppler::typeof(1.0Hz)
+    phase::Float64
     amplitude::Float64
     exists::E
-    doa::T
+    doa::D
+end
+
+struct NoiseJammerPhase
 end
 
 struct NoiseJammer{
-    T <: Union{SVector{3}, AbstractDOA},
-    E <: Union{Bool, AbstractExistence},
+    D <: Union{SVector{3}, AbstractDOA},
+    E <: Union{Bool, AbstractExistence}
 } <: AbstractJammer
     id::Int
-    noise::ComplexF64
     amplitude::Float64
     exists::E
-    doa::T
+    doa::D
 end
 
-function NoiseJammer(id, amplitude, exists = true, doa = SVector(0.0, 0.0, 1.0))
-    noise = randn(ComplexF64)
-    NoiseJammer(id, noise, amplitude, exists, doa)
+function CWJammer(id, amplitude; doppler = 0.0Hz, phase = 0.0, exists = true, doa = SVector(0, 0, 1))
+    CWJammer(id, amplitude, doppler, phase, exists, doa)
 end
 
-function propagate(jammer::CWJammer, Δt)
-    carrier_phase = 2π * jammer.carrier_doppler * Δt + jammer.carrier_phase
-    carrier_phase -= (carrier_phase > 2π) * 2π
-    exists = propagate(jammer.exists, Δt)
-    doa = propagate(jammer.doa, Δt)
-    CWJammer(jammer.id, jammer.carrier_doppler, carrier_phase, jammer.amplitude, exists, doa)
+function NoiseJammer(id, amplitude, exists = true, doa = SVector(0, 0, 1))
+    NoiseJammer(id, amplitude, exists, doa)
 end
 
-function propagate(jammer::NoiseJammer, Δt)
-    noise = randn(ComplexF64)
-    exists = propagate(jammer.exists, Δt)
-    doa = propagate(jammer.doa, Δt)
-    NoiseJammer(jammer.id, noise, jammer.amplitude, exists, doa)
+function propagate(jammer::CWJammer, intermediate_frequency, Δt, rng) where T <: Union{Float32, Float64}
+    phase_delta = 2π * upreferred((intermediate_frequency + get_carrier_doppler(jammer)) * Δt)
+    phase = mod2pi(get_carrier_phase(jammer) + phase_delta + π) - π
+    exists = propagate(jammer.exists, Δt, rng)
+    doa = propagate(jammer.doa, Δt, rng)
+    CWJammer(jammer.id, get_carrier_doppler(jammer), phase, get_amplitude(jammer), exists, doa)
 end
 
-get_carrier_phase(jammer::CWJammer) = jammer.carrier_phase
-get_carrier_doppler(jammer::CWJammer) = jammer.carrier_doppler
-get_noise(jammer::NoiseJammer) = jammer.noise
-
-function get_signal(jammer::CWJammer, attitude, get_steer_vec)
-    get_existence(jammer) * (get_steer_vec(get_doa(jammer), attitude) .* (
-        cis(get_carrier_phase(jammer)) *
-        get_amplitude(jammer)
-    ))
+function fast_propagate(phase::CWJammerPhase{T}, jammer::CWJammer, intermediate_frequency, Δt) where T <: Union{Float32, Float64}
+    carrier_delta = T(2π * upreferred((intermediate_frequency + get_carrier_doppler(jammer)) * Δt))
+    carrier_phase = phase.carrier + carrier_delta
+    carrier_phase -= (carrier_phase > T(π)) * T(2π)
+    CWJammerPhase(carrier_phase)
 end
 
-function get_signal(jammer::NoiseJammer, attitude, get_steer_vec)
-    get_existence(jammer) * (get_steer_vec(get_doa(jammer), attitude) .* (
-        get_noise(jammer) *
-        get_amplitude(jammer)
-    ))
+Base.@propagate_inbounds function get_signal(phase::CWJammerPhase, jammer::CWJammer, steer_vec::S, rng) where {T <: Union{Float32, Float64}, S <: Union{SVector{N, Complex{T}}, Complex{T}, T} where N}
+    temp = get_existence(jammer) * T(get_amplitude(jammer)) * GNSSSignals.cis_vfast(T(phase.carrier))
+    steer_vec * temp
 end
+
+function propagate(jammer::NoiseJammer, intermediate_frequency, Δt, rng)
+    exists = propagate(jammer.exists, Δt, rng)
+    doa = propagate(jammer.doa, Δt, rng)
+    NoiseJammer(jammer.id, get_amplitude(jammer), exists, doa)
+end
+
+function fast_propagate(phase::NoiseJammerPhase, jammer::NoiseJammer, intermediate_frequency, Δt)
+    phase
+end
+
+Base.@propagate_inbounds function get_signal(phase::NoiseJammerPhase, jammer::NoiseJammer, steer_vec::S, rng) where {T <: Union{Float32, Float64}, S <: Union{SVector{N, Complex{T}}, Complex{T}, T} where N}
+    temp = get_existence(jammer) * T(get_amplitude(jammer)) * randn(rng, Complex{T})
+    steer_vec * temp
+end
+
+@inline get_carrier_phase(jammer::CWJammer) = jammer.phase
+@inline get_carrier_doppler(jammer::CWJammer) = jammer.doppler
+@inline get_phase(jammer::CWJammer) = CWJammerPhase(get_carrier_phase(jammer))
+@inline get_phase(jammer::NoiseJammer) = NoiseJammerPhase()
+@inline get_id(jammer::AbstractJammer) = jammer.id

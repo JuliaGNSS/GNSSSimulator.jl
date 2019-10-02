@@ -12,6 +12,7 @@ function ConstantDopplerStructuralInterference(
         added_carrier_doppler = NaN*Hz,
         added_carrier_phase = NaN,
         added_code_phase = NaN,
+        amplitude = NaN,
         exists = true,
         doa = SVector(0,0,1),
         added_relative_velocity = 0.0m/s,
@@ -29,28 +30,35 @@ function ConstantDopplerStructuralInterference(
     end
     if isnan(added_code_phase)
         code_doppler = carrier_doppler * get_code_center_frequency_ratio(S)
-        code_phase = mod(sat.code_phase + calc_code_phase(added_signal_path, get_code_frequency(S) + code_doppler, get_code_length(S)), get_code_length(S))
+        code_phase = mod(get_code_phase(sat) + calc_code_phase(added_signal_path, get_code_frequency(S) + code_doppler, get_code_length(S)), get_code_length(S))
     else
-        code_phase = mod(sat.code_phase + added_code_phase, get_code_length(S))
+        code_phase = mod(get_code_phase(sat) + added_code_phase, get_code_length(S))
     end
-    amplitude = get_amplitude(sat) * sqrt(uconvertp(NoUnits, signal_amplification))
+    if isnan(amplitude)
+        amplitude = get_amplitude(sat) * sqrt(uconvertp(NoUnits, signal_amplification))
+    end
     sat = ConstantDopplerSatellite{S, D, E}(get_prn(sat), carrier_doppler, carrier_phase, code_phase, amplitude, exists, doa)
     ConstantDopplerStructuralInterference(sat)
 end
 
-function propagate(si::ConstantDopplerStructuralInterference, Δt)
-    ConstantDopplerStructuralInterference(propagate(si.sat, Δt))
+function fast_propagate(phase::SatellitePhase, si::ConstantDopplerStructuralInterference, intermediate_frequency, Δt)
+    fast_propagate(phase, si.sat, intermediate_frequency, Δt)
 end
 
-function get_signal(si::AbstractStructuralInterference, attitude, manifold)
-    get_signal(si.sat, attitude, manifold)
+Base.@propagate_inbounds function get_signal(phase::SatellitePhase, si::ConstantDopplerStructuralInterference, steer_vec, rng)
+    get_signal(phase, si.sat, steer_vec, rng)
 end
 
-get_doa(si::ConstantDopplerStructuralInterference) = get_doa(si.sat)
-get_existence(si::ConstantDopplerStructuralInterference) = get_existence(si.sat)
-get_carrier_doppler(si::ConstantDopplerStructuralInterference) = get_carrier_doppler(si.sat)
-get_code_doppler(si::ConstantDopplerStructuralInterference) = get_code_doppler(si.sat)
-get_carrier_phase(si::ConstantDopplerStructuralInterference) = get_carrier_phase(si.sat)
-get_code_phase(si::ConstantDopplerStructuralInterference) = get_code_phase(si.sat)
-get_prn(si::ConstantDopplerStructuralInterference) = get_prn(si.sat)
-get_amplitude(si::ConstantDopplerStructuralInterference) = get_amplitude(si.sat)
+function propagate(si::ConstantDopplerStructuralInterference, phase, Δt, rng)
+    ConstantDopplerStructuralInterference(propagate(si.sat, phase, Δt, rng))
+end
+
+@inline get_doa(si::ConstantDopplerStructuralInterference) = get_doa(si.sat)
+@inline get_existence(si::ConstantDopplerStructuralInterference) = get_existence(si.sat)
+@inline get_carrier_doppler(si::ConstantDopplerStructuralInterference) = get_carrier_doppler(si.sat)
+@inline get_code_doppler(si::ConstantDopplerStructuralInterference) = get_code_doppler(si.sat)
+@inline get_carrier_phase(si::ConstantDopplerStructuralInterference) = get_carrier_phase(si.sat)
+@inline get_code_phase(si::ConstantDopplerStructuralInterference) = get_code_phase(si.sat)
+@inline get_prn(si::ConstantDopplerStructuralInterference) = get_prn(si.sat)
+@inline get_amplitude(si::ConstantDopplerStructuralInterference) = get_amplitude(si.sat)
+@inline get_phase(si::ConstantDopplerStructuralInterference) = SatellitePhase(get_carrier_phase(si), get_code_phase(si))

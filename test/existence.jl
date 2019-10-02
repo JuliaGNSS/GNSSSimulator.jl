@@ -1,7 +1,7 @@
 @testset "Existence" begin
     @testset "Static Existence" begin
-        @test propagate(true, 1s) == true
-        @test propagate(false, 1s) == false
+        @test GNSSSimulator.propagate(true, 1s, Random.GLOBAL_RNG) == true
+        @test GNSSSimulator.propagate(false, 1s, Random.GLOBAL_RNG) == false
         @test get_existence(true) == true
         @test get_existence(false) == false
     end
@@ -9,10 +9,10 @@
         existences = [true, false, true, false, true, false]
         dynamic_existence = @inferred DynamicExistence(existences, 0.0s, 1.0Hz)
 
-        next_dynamic_existence = @inferred propagate(dynamic_existence, 1s)
+        next_dynamic_existence = @inferred GNSSSimulator.propagate(dynamic_existence, 1s, Random.GLOBAL_RNG)
         @test next_dynamic_existence == DynamicExistence(existences, 1.0s, 1.0Hz)
         @test get_existence(next_dynamic_existence) == false
-        @test get_existence(propagate(next_dynamic_existence, 3s)) == true
+        @test get_existence(GNSSSimulator.propagate(next_dynamic_existence, 3s, Random.GLOBAL_RNG)) == true
 
     end
 end

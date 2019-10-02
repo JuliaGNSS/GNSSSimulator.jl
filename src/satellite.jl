@@ -1,9 +1,14 @@
 abstract type AbstractSatellite{S <: AbstractGNSSSystem} <: AbstractEmitter end
 
+struct SatellitePhase{T}
+    carrier::T
+    code::T
+end
+
 struct ConstantDopplerSatellite{
     S <: AbstractGNSSSystem,
     D <: Union{SVector{3}, AbstractDOA},
-    E <: Union{Bool, AbstractExistence},
+    E <: Union{Bool, AbstractExistence}
 } <: AbstractSatellite{S}
     prn::Int
     carrier_doppler::typeof(1.0Hz)
@@ -20,6 +25,7 @@ function ConstantDopplerSatellite(
         carrier_doppler = NaN*Hz,
         carrier_phase = NaN,
         code_phase = NaN,
+        amplitude = NaN,
         cn0 = 45dBHz,
         exists::E = true,
         doa::D = SVector(0,0,1),
@@ -39,8 +45,63 @@ function ConstantDopplerSatellite(
         code_doppler = carrier_doppler * get_code_center_frequency_ratio(S)
         code_phase = calc_code_phase(sat_user_distance, get_code_frequency(S) + code_doppler, get_code_length(S))
     end
-    amplitude = calc_amplitude_from_cn0(cn0, n0)
+    if isnan(amplitude)
+        amplitude = calc_amplitude_from_cn0(cn0, n0)
+    end
     ConstantDopplerSatellite{S, D, E}(prn, carrier_doppler, carrier_phase, code_phase, amplitude, exists, doa)
+end
+
+"""
+$(SIGNATURES)
+
+Propagates the satellite state over time
+"""
+function propagate(sat::ConstantDopplerSatellite{S, D, E}, intermediate_frequency, Δt, rng) where {S, D, E, T}
+    code_delta = upreferred((get_code_frequency(S) + get_code_doppler(sat)) * Δt)
+    code_phase = mod(get_code_phase(sat) + code_delta, get_code_length(S))
+    carrier_delta = 2π * upreferred((intermediate_frequency + get_carrier_doppler(sat)) * Δt)
+    carrier_phase = mod2pi(get_carrier_phase(sat) + carrier_delta + π) - π
+    amplitude = propagate(sat.amplitude, Δt, rng)
+    exists = propagate(sat.exists, Δt, rng)
+    doa = propagate(sat.doa, Δt, rng)
+    ConstantDopplerSatellite{S, D, E}(sat.prn, sat.carrier_doppler, carrier_phase, code_phase, amplitude, exists, doa)
+end
+
+function fast_propagate(phase::SatellitePhase, sat::ConstantDopplerSatellite{S}, intermediate_frequency, Δt) where {S <: AbstractGNSSSystem}
+    code_length = get_code_length(S)
+    code_delta = upreferred((get_code_frequency(S) + get_code_doppler(sat)) * Δt)
+    code_phase = phase.code + code_delta
+    code_phase -= (code_phase > code_length) * code_length
+    carrier_delta = 2π * upreferred((intermediate_frequency + get_carrier_doppler(sat)) * Δt)
+    carrier_phase = phase.carrier + carrier_delta
+    carrier_phase -= (carrier_phase > π) * 2π
+    SatellitePhase(carrier_phase, code_phase)
+end
+
+Base.@propagate_inbounds function get_signal(phase::SatellitePhase, sat::ConstantDopplerSatellite, steer_vec::S, rng) where {T <: Union{Float32, Float64}, S <: Union{SVector{N, Complex{T}}, Complex{T}, T} where N}
+    temp = get_existence(sat) *
+        T(get_amplitude(sat)) *
+        get_code_unsafe(GPSL1, phase.code, sat.prn) *
+        GNSSSignals.cis_vfast(T(phase.carrier))
+    steer_vec * temp
+end
+
+@inline get_carrier_doppler(sat::AbstractSatellite) = sat.carrier_doppler
+@inline get_code_doppler(sat::AbstractSatellite{S}) where S <: AbstractGNSSSystem =
+    sat.carrier_doppler * get_code_center_frequency_ratio(S)
+@inline get_carrier_phase(sat::AbstractSatellite) = sat.carrier_phase
+@inline get_code_phase(sat::AbstractSatellite) = sat.code_phase
+@inline get_prn(sat::AbstractSatellite) = sat.prn
+@inline get_phase(sat::AbstractSatellite) =
+    SatellitePhase(get_carrier_phase(sat), get_code_phase(sat))
+
+"""
+$(SIGNATURES)
+
+Calculate amplitude of a signal based on the carrier-to-noise-density-ratio (CN0) `cn0` in [dB-Hz] and the frequency bandwidth `bandwidth` in [Hz], assumes noise power to be 1.
+"""
+function calc_amplitude_from_cn0(cn0, n0)
+    sqrt(linear(cn0) * n0)
 end
 
 """
@@ -80,44 +141,4 @@ Calculates the Doppler based on elevation. Assumes satellite velocity only in el
 function calc_doppler(distance_from_earth_center, doa, velocity, center_freq)
     doa_sph = cart2sph(get_doa(doa))
     center_freq / SPEED_OF_LIGHT * velocity * cos(π / 2 - asin(EARTH_RADIUS * sin(π / 2 + doa_sph.ϕ) / distance_from_earth_center))
-end
-
-"""
-$(SIGNATURES)
-
-Propagates the satellite state over time
-"""
-function propagate(sat::ConstantDopplerSatellite{S, D, E}, Δt) where {S <: AbstractGNSSSystem,  D <: Union{SVector{3}, AbstractDOA}, E <: Union{Bool, AbstractExistence}}
-    carrier_phase = 2π * get_carrier_doppler(sat) * Δt + get_carrier_phase(sat)
-    carrier_phase -= (carrier_phase > 2π) * 2π
-    code_phase = (get_code_frequency(S) + get_code_doppler(sat)) * Δt + get_code_phase(sat)
-    code_length = get_code_length(S)
-    code_phase -= (code_phase >= code_length) * code_length
-    amplitude = propagate(sat.amplitude, Δt)
-    exists = propagate(sat.exists, Δt)
-    doa = propagate(sat.doa, Δt)
-    ConstantDopplerSatellite{S, D, E}(sat.prn, sat.carrier_doppler, carrier_phase, code_phase, amplitude, exists, doa)
-end
-
-function get_signal(sat::AbstractSatellite{S}, attitude, manifold) where S <: AbstractGNSSSystem
-    get_existence(sat) * (get_steer_vec(manifold, get_doa(sat), attitude) * (
-        cis(get_carrier_phase(sat)) *
-        get_code_unsafe(S, get_code_phase(sat), get_prn(sat)) *
-        get_amplitude(sat)
-    ))
-end
-
-get_carrier_doppler(sat::AbstractSatellite) = sat.carrier_doppler
-get_code_doppler(sat::AbstractSatellite{S}) where S <: AbstractGNSSSystem = sat.carrier_doppler * get_code_center_frequency_ratio(S)
-get_carrier_phase(sat::AbstractSatellite) = sat.carrier_phase
-get_code_phase(sat::AbstractSatellite) = sat.code_phase
-get_prn(sat::AbstractSatellite) = sat.prn
-
-"""
-$(SIGNATURES)
-
-Calculate amplitude of a signal based on the carrier-to-noise-density-ratio (CN0) `cn0` in [dB-Hz] and the frequency bandwidth `bandwidth` in [Hz], assumes noise power to be 1.
-"""
-function calc_amplitude_from_cn0(cn0, n0)
-    sqrt(linear(cn0) * n0)
 end

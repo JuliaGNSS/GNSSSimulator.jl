@@ -1,31 +1,31 @@
 abstract type AbstractReceiver end
 
 struct Receiver{
-        G <: Union{Float64, SMatrix, AbstractGainPhaseMismCrosstalk},
-        A <: Union{RotXYZ{Float64}, AbstractAttitude},
-        Q <: Noise
+        G <: Union{Number, SMatrix, AbstractGainPhaseMismCrosstalk},
+        A <: Union{RotXYZ{<:Real}, AbstractAttitude}
     } <: AbstractReceiver
+    sample_frequency::typeof(1.0Hz)
+    intermediate_frequency::typeof(1.0Hz)
     gain_phase_mism_crosstalk::G
     attitude::A
-    noise::Q
+    noise_std::Float64
 end
 
-function Receiver(gain_phase_mism_crosstalk::Float64, attitude, noise_std::Float64)
-    noise = Noise(randn(ComplexF64) * noise_std, noise_std)
-    Receiver(gain_phase_mism_crosstalk, attitude, noise)
+function Receiver(
+    sample_frequency;
+    intermediate_frequency = 0.0Hz,
+    gain_phase_mism_crosstalk = 1.0,
+    attitude = RotXYZ(0,0,0),
+    n0 = 1/Hz,
+    noise_std = sqrt(n0 * sample_frequency)
+    )
+    Receiver(sample_frequency, intermediate_frequency, gain_phase_mism_crosstalk, attitude, noise_std)
 end
 
-function Receiver(gain_phase_mism_crosstalk, attitude, noise_std::Float64)
-    gpmc = get_gain_phase_mism_crosstalk(gain_phase_mism_crosstalk)
-    noise = Noise(randn(SVector{size(gpmc, 1), ComplexF64}) * noise_std, noise_std)
-    Receiver(gain_phase_mism_crosstalk, attitude, noise)
-end
-
-function propagate(receiver::Receiver, Δt)
-    gain_phase_mism_crosstalk = propagate(receiver.gain_phase_mism_crosstalk, Δt)
-    attitude = propagate(receiver.attitude, Δt)
-    noise = propagate(receiver.noise, Δt)
-    Receiver(gain_phase_mism_crosstalk, attitude, noise)
+function propagate(receiver::Receiver, Δt, rng)
+    gain_phase_mism_crosstalk = propagate(receiver.gain_phase_mism_crosstalk, Δt, rng)
+    attitude = propagate(receiver.attitude, Δt, rng)
+    Receiver(receiver.sample_frequency, receiver.intermediate_frequency, gain_phase_mism_crosstalk, attitude, receiver.noise_std)
 end
 
 function get_gain_phase_mism_crosstalk(receiver::Receiver)
@@ -36,6 +36,12 @@ function get_attitude(receiver::Receiver)
     get_attitude(receiver.attitude)
 end
 
-function get_noise(receiver::Receiver)
-    get_noise(receiver.noise)
+@inline function get_sample_frequency(receiver::Receiver)
+    receiver.sample_frequency
 end
+
+@inline function get_intermediate_frequency(receiver::Receiver)
+    receiver.intermediate_frequency
+end
+
+@inline get_noise_std(receiver::Receiver) = receiver.noise_std

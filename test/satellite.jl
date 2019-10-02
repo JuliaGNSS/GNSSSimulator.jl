@@ -13,18 +13,31 @@
 
     @testset "Satellite signal" begin
         sat = ConstantDopplerSatellite(GPSL1, 1, carrier_doppler = 1000.0Hz, carrier_phase = π / 2, code_phase = 100.0, cn0 = 45dBHz)
-        next_sat = @inferred propagate(sat, 1/2e6Hz)
-        @test @inferred(GNSSSimulator.get_carrier_doppler(next_sat)) == 1000Hz
-        @test @inferred(GNSSSimulator.get_code_doppler(next_sat)) ≈ 1000Hz / 1540
-        @test @inferred(GNSSSimulator.get_carrier_phase(next_sat)) ≈ π / 2 + 2π * 1000Hz / 2e6Hz
-        @test @inferred(GNSSSimulator.get_code_phase(next_sat)) ≈ 100 + (1023e3Hz + 1000Hz / 1540) / 2e6Hz
-        @test @inferred(GNSSSimulator.get_existence(next_sat)) == true
-        @test @inferred(GNSSSimulator.get_amplitude(next_sat)) == 10^(45 / 20)
-        @test @inferred(GNSSSimulator.get_prn(next_sat)) == 1
 
-        manifold = IdealManifold()
+        phase = @inferred GNSSSimulator.get_phase(sat)
+        @test phase.carrier == π / 2
+        @test phase.code == 100.0
 
-        signal = @inferred get_signal(next_sat, nothing, manifold)
-        @test signal ≈ cis(π / 2 + 2π * 1000Hz / 2e6Hz) * get_code(GPSL1, 100 + (1023e3Hz + 1000Hz / 1540) / 2e6Hz, 1) * 10^(45 / 20)
+        signal = @inferred GNSSSimulator.get_signal(phase, sat, 1.0 + 0.0im, Random.GLOBAL_RNG)
+        @test signal ≈ 1.0 * 10^(45 / 20) * cis(π / 2) * get_code(GPSL1, 100.0, 1) # cis(π / 2) == cis_vfast(π / 2)
+
+        signal = @inferred GNSSSimulator.get_signal(phase, sat, SVector(1.0im, 2.0im), Random.GLOBAL_RNG)
+        @test signal ≈ SVector(1im, 2im) * 10^(45 / 20) * cis(π / 2) * get_code(GPSL1, 100.0, 1) # cis(π / 2) == cis_vfast(π / 2)
+
+        next_phase = @inferred GNSSSimulator.fast_propagate(phase, sat, 100.0Hz, 1/2e6Hz)
+        @test next_phase.carrier == π / 2 + 2π * 1100.0Hz / 2e6Hz
+        @test next_phase.code == 100.0 + (1023e3Hz + 1000.0Hz / 1540) / 2e6Hz
+
+        next_sat = @inferred GNSSSimulator.propagate(sat, 100.0Hz, 1/2e6Hz, Random.GLOBAL_RNG)
+        @test @inferred(get_carrier_doppler(next_sat)) == 1000Hz
+        @test @inferred(get_code_doppler(next_sat)) ≈ 1000Hz / 1540
+        @test @inferred(get_carrier_phase(next_sat)) ≈ π / 2 + 2π * 1100.0Hz / 2e6Hz
+        @test @inferred(get_code_phase(next_sat)) ≈ 100.0 + (1023e3Hz + 1000.0Hz / 1540) / 2e6Hz
+        @test @inferred(get_existence(next_sat)) == true
+        @test @inferred(get_amplitude(next_sat)) == 10^(45 / 20)
+        @test @inferred(get_prn(next_sat)) == 1
+
+        signal = @inferred GNSSSimulator.get_signal(next_phase, next_sat, 1.0 + 0.0im, Random.GLOBAL_RNG)
+        @test signal ≈ 1.0 * 10^(45 / 20) * GNSSSignals.cis_vfast(π / 2 + 2π * 1100.0Hz / 2e6Hz) * get_code(GPSL1, 100.0 + (1023e3Hz + 1000.0Hz / 1540) / 2e6Hz, 1)
     end
 end
