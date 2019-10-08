@@ -25,4 +25,5 @@
     @test @inferred(get_existence(next_si)) == true
     @test @inferred(get_amplitude(next_si)) ≈ 10^(42 / 20)
     @test @inferred(get_prn(next_si)) == 1
+    @test @inferred(get_gnss_system(next_si)) == GPSL1
 end

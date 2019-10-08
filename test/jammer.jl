@@ -21,6 +21,10 @@
         @test @inferred(get_existence(next_jammer)) == true
         @test @inferred(get_id(next_jammer)) == 1
         @test @inferred(get_doa(next_jammer)) == SVector(0.0, 0.0, 1.0)
+
+        jammer = @inferred CWJammer(1, 10.0)
+        @test get_id(jammer) == 1
+        @test get_amplitude(jammer) == 10.0
     end
 
     @testset "Noise Jammer" begin

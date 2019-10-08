@@ -13,20 +13,25 @@
 
     @testset "Dynamic Attitude" begin
         attitudes = [RotXYZ(0.1*i, 0.1*i+0.1, 0.1*i+0.2) for i = 0:10]
-        dynamic_attitude = @inferred DynamicAttitude(attitudes, 0.0s, 1Hz)
+        dynamic_attitude = @inferred DynamicAttitude(attitudes, 1Hz, 0.0s)
         next_dynamic_attitude = @inferred GNSSSimulator.propagate(dynamic_attitude, 1s, Random.GLOBAL_RNG)
         forward_dynamic_attitude = @inferred GNSSSimulator.propagate(dynamic_attitude, 20s, Random.GLOBAL_RNG)
         linear_dynamic_attitude = @inferred LinearDynamicAttitude(RotXYZ(0.0, 0.1, 0.2), 0.1rad/s, 0.1rad/s, 0.1rad/s)
         next_linear_dynamic_attitude = @inferred GNSSSimulator.propagate(linear_dynamic_attitude, 1s, Random.GLOBAL_RNG)
 
-        @test next_dynamic_attitude == DynamicAttitude(attitudes, 1.0s, 1Hz)
+        @test next_dynamic_attitude == DynamicAttitude(attitudes, 1Hz, 1.0s)
         @test get_attitude(next_dynamic_attitude) ≈ RotXYZ(0.1, 0.2, 0.3)
         @test get_attitude(forward_dynamic_attitude) == RotXYZ(1.0, 1.1, 1.2)
         @test next_linear_dynamic_attitude.attitude ≈ RotXYZ(0.1, 0.2, 0.3)
         @test get_attitude(next_linear_dynamic_attitude) ≈ RotXYZ(0.1, 0.2, 0.3)
 
+        dynamic_attitude = @inferred DynamicAttitude(attitudes, 1Hz, time = 1.0s)
+        @test dynamic_attitude.attitudes == attitudes
+        @test dynamic_attitude.sample_freq == 1Hz
+        @test dynamic_attitude.time == 1.0s
+
         attitudes2 = [RotXYZ(0.0, 0.1, 0.2) for i = 0:10]
-        noisy_dynamic_attitude = @inferred NoisyDynamicAttitude(attitudes2, 0.0s, 1Hz, 0.1, 0.2, 0.3)
+        noisy_dynamic_attitude = @inferred NoisyDynamicAttitude(attitudes2, 1Hz, 0.1, 0.2, 0.3, time = 0.0s)
 
         rng = MersenneTwister(1234)
         next_noisy_dynamic_attitude = @inferred GNSSSimulator.propagate(noisy_dynamic_attitude, 1s, rng)

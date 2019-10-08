@@ -1,11 +1,7 @@
-using Test, GNSSSimulator, Rotations, CoordinateTransformations, StaticArrays, GNSSSignals, Random, Statistics, Unitful, LinearAlgebra, PhasedArray
+using Test, GNSSSimulator, Rotations, CoordinateTransformations, StaticArrays, GNSSSignals, Random, Unitful, LinearAlgebra, PhasedArray
 import Unitful: dB, Hz, kHz, MHz, GHz, dBHz, m, s, rad, °, ms, μs
 
-
-const NUM_ANTS = 4
 const EARTH_RADIUS = 6_360_000m
-
-Random.seed!(1234)
 
 include("attitude.jl")
 include("doa.jl")

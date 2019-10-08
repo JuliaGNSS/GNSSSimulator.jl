@@ -30,7 +30,7 @@ struct NoiseJammer{
 end
 
 function CWJammer(id, amplitude; doppler = 0.0Hz, phase = 0.0, exists = true, doa = SVector(0, 0, 1))
-    CWJammer(id, amplitude, doppler, phase, exists, doa)
+    CWJammer(id, doppler, phase, amplitude, exists, doa)
 end
 
 function NoiseJammer(id, amplitude, exists = true, doa = SVector(0, 0, 1))
@@ -45,10 +45,10 @@ function propagate(jammer::CWJammer, intermediate_frequency, Δt, rng) where T <
     CWJammer(jammer.id, get_carrier_doppler(jammer), phase, get_amplitude(jammer), exists, doa)
 end
 
-function fast_propagate(phase::CWJammerPhase{T}, jammer::CWJammer, intermediate_frequency, Δt) where T <: Union{Float32, Float64}
-    carrier_delta = T(2π * upreferred((intermediate_frequency + get_carrier_doppler(jammer)) * Δt))
+function fast_propagate(phase::CWJammerPhase, jammer::CWJammer, intermediate_frequency, Δt)
+    carrier_delta = 2π * upreferred((intermediate_frequency + get_carrier_doppler(jammer)) * Δt)
     carrier_phase = phase.carrier + carrier_delta
-    carrier_phase -= (carrier_phase > T(π)) * T(2π)
+    carrier_phase = carrier_phase - (carrier_phase > π) * 2π
     CWJammerPhase(carrier_phase)
 end
 

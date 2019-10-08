@@ -6,6 +6,8 @@ struct ReceivedSignal{
     receiver::R
 end
 
+function ReceivedSignal(receiver, )
+end
 
 function get_measurement(::Type{T}, num_samples, received_signal::ReceivedSignal, manifold::AbstractManifold{1} = IdealManifold(), rng = Random.GLOBAL_RNG) where {T <: Union{Float32, Float64}}
     signal = Vector{Complex{T}}(undef, num_samples)
@@ -32,17 +34,23 @@ function get_measurement!(signal::Union{Matrix{Complex{T}}, Vector{Complex{T}}},
     if length(emitters) > 0
         receiver = get_receiver(received_signal)
         Δt_fast = 1 / get_sample_frequency(receiver)
-        phases = get_phase.(emitters)
+        phases = map(get_phase, emitters)
         steer_vecs = map(emitter -> convert_complex_or_real.(T, get_steer_vec(manifold, get_doa(emitter), get_attitude(receiver))), emitters)
         C = convert_complex_or_real.(T, get_gain_phase_mism_crosstalk(receiver))
         @inbounds @fastmath for i = 1:get_num_samples(signal)
-            temp = get_signal(phases[1], emitters[1], steer_vecs[1], rng)
-            for s = 2:length(emitters)
-                temp = temp + get_signal(phases[s], emitters[s], steer_vecs[s], rng)
-            end
+#            temp = zero(typeof(steer_vecs[1]))
+#            temp = get_signal(phases[1], emitters[1], steer_vecs[1], rng)
+#            for s = 1:length(emitters)
+#                temp = temp + get_signal(phases[s], emitters[s], steer_vecs[s], rng)
+#            end
+            temps = map((phase, emitter, steer_vec) -> get_signal(phase, emitter, steer_vec, rng), phases, emitters, steer_vecs)
+            temp = sum(temps)
+#            temp = Base.mapfoldl(pes -> get_signal(pes..., rng), +, zip(phases, emitters, steer_vecs))
+#            temp = sum_over_signals(phases, emitters, steer_vecs, rng)
+            #temp = sum(temps)
             temp = C * (temp + randn(rng, typeof(temp)) * get_noise_std(receiver))
             set_signal!(signal, i, temp)
-            phases = fast_propagate.(phases, emitters, get_intermediate_frequency(receiver), Δt_fast)
+            phases = map((phase, emitter) -> fast_propagate(phase, emitter, get_intermediate_frequency(receiver), Δt_fast), phases, emitters)
         end
     else
         randn!(rng, signal)

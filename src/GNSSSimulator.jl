@@ -29,7 +29,7 @@ export
     DynamicExistence,
     ConstantDopplerSatellite,
     ConstantDopplerStructuralInterference,
-    StaticGainPhaseMismCrosstalk,
+    AsymptoticGainPhaseMismCrosstalk,
     CWJammer,
     NoiseJammer,
     Noise,
@@ -45,6 +45,7 @@ export
     get_carrier_phase,
     get_code_doppler,
     get_code_phase,
+    get_gnss_system,
     get_prn,
     get_id,
     get_noise_std,
@@ -55,10 +56,6 @@ export
     get_measurement!,
     get_measurement
 
-    const LOTHARS_DOAS = [0.6409    0.5260   -0.6634    0.8138   -0.5000   -0.9513   -0.6634         0    0.4924   -0.3100         0;
-                         -0.6409   -0.0646    0.3830   -0.2962   -0.5000   -0.1677   -0.5567   -0.0872    0.4132    0.8517   -0.9659;
-                          0.4226    0.8480    0.6428    0.5000    0.7071    0.2588    0.5000    0.9962    0.7660    0.4226    0.2588]
-
     propagate(val::Number, Δt, rng) = val
     const cart2sph = SphericalFromCartesian()
     const sph2cart = CartesianFromSpherical()
@@ -67,10 +64,6 @@ export
         index = floor(Int, time * sample_freq) + 1
         index < size(values, 1) ? values[index] : values[end]
     end
-
-    # Hack to allow filter on Tuples.
-    # See: https://github.com/JuliaLang/julia/pull/32968
-    filter(f, xs::Tuple) = Base.afoldl((ys, x) -> f(x) ? (ys..., x) : ys, (), xs...)
 
     include("attitude.jl")
     include("doa.jl")

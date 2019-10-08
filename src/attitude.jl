@@ -14,8 +14,12 @@ end
 
 struct DynamicAttitude <: AbstractAttitude
     attitudes::Vector{RotXYZ{Float64}}
-    time::typeof(1.0s)
     sample_freq::typeof(1.0Hz)
+    time::typeof(1.0s)
+end
+
+function DynamicAttitude(attitudes, sample_freq; time = 0.0s)
+    DynamicAttitude(attitudes, sample_freq, time)
 end
 
 @with_kw struct LinearDynamicAttitude <: AbstractAttitude
@@ -28,15 +32,15 @@ end
 struct NoisyDynamicAttitude <: AbstractAttitude
     attitude::RotXYZ{Float64}
     attitudes::Vector{RotXYZ{Float64}}
-    time::typeof(1.0s)
     sample_freq::typeof(1.0Hz)
     roll_std::Float64
     pitch_std::Float64
     yaw_std::Float64
+    time::typeof(1.0s)
 end
 
-function NoisyDynamicAttitude(attitudes::Vector{<:RotXYZ}, time, sample_freq, roll_std, pitch_std, yaw_std)
-    NoisyDynamicAttitude(first(attitudes), attitudes, time, sample_freq, roll_std, pitch_std, yaw_std)
+function NoisyDynamicAttitude(attitudes::Vector{<:RotXYZ}, sample_freq, roll_std, pitch_std, yaw_std; time = 0.0s)
+    NoisyDynamicAttitude(first(attitudes), attitudes, sample_freq, roll_std, pitch_std, yaw_std, time)
 end
 
 @with_kw struct NoisyLinearDynamicAttitude <: AbstractAttitude
@@ -90,7 +94,7 @@ If time index exceeds data length, last available value is returned.
 """
 function propagate(attitude::DynamicAttitude, Δt, rng)
     next_time = attitude.time + Δt
-    DynamicAttitude(attitude.attitudes, next_time, attitude.sample_freq)
+    DynamicAttitude(attitude.attitudes, attitude.sample_freq, next_time)
 end
 
 function get_attitude(attitude::DynamicAttitude)
@@ -107,7 +111,7 @@ function propagate(attitude::NoisyDynamicAttitude, Δt, rng)
     next_time = attitude.time + Δt
     T = get_sampled_value(attitude.time, attitude.sample_freq, attitude.attitudes)
     next_T = RotXYZ(T.theta1 + randn(rng) * attitude.roll_std, T.theta2 + randn(rng) * attitude.pitch_std, T.theta3 + randn(rng) * attitude.yaw_std)
-    NoisyDynamicAttitude(next_T, attitude.attitudes, next_time, attitude.sample_freq, attitude.roll_std, attitude.pitch_std, attitude.yaw_std)
+    NoisyDynamicAttitude(next_T, attitude.attitudes, attitude.sample_freq, attitude.roll_std, attitude.pitch_std, attitude.yaw_std, next_time)
 end
 
 """

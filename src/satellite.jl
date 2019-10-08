@@ -71,17 +71,17 @@ function fast_propagate(phase::SatellitePhase, sat::ConstantDopplerSatellite{S},
     code_length = get_code_length(S)
     code_delta = upreferred((get_code_frequency(S) + get_code_doppler(sat)) * Δt)
     code_phase = phase.code + code_delta
-    code_phase -= (code_phase > code_length) * code_length
+    code_phase = code_phase - (code_phase > code_length) * code_length
     carrier_delta = 2π * upreferred((intermediate_frequency + get_carrier_doppler(sat)) * Δt)
     carrier_phase = phase.carrier + carrier_delta
-    carrier_phase -= (carrier_phase > π) * 2π
+    carrier_phase = carrier_phase - (carrier_phase > π) * 2π
     SatellitePhase(carrier_phase, code_phase)
 end
 
-Base.@propagate_inbounds function get_signal(phase::SatellitePhase, sat::ConstantDopplerSatellite, steer_vec::S, rng) where {T <: Union{Float32, Float64}, S <: Union{SVector{N, Complex{T}}, Complex{T}, T} where N}
+Base.@propagate_inbounds function get_signal(phase::SatellitePhase, sat::ConstantDopplerSatellite{S}, steer_vec::V, rng) where {S <: AbstractGNSSSystem, T <: Union{Float32, Float64}, V <: Union{SVector{N, Complex{T}}, Complex{T}, T} where N}
     temp = get_existence(sat) *
         T(get_amplitude(sat)) *
-        get_code_unsafe(GPSL1, phase.code, sat.prn) *
+        get_code_unsafe(S, phase.code, sat.prn) *
         GNSSSignals.cis_vfast(T(phase.carrier))
     steer_vec * temp
 end
@@ -94,6 +94,7 @@ end
 @inline get_prn(sat::AbstractSatellite) = sat.prn
 @inline get_phase(sat::AbstractSatellite) =
     SatellitePhase(get_carrier_phase(sat), get_code_phase(sat))
+@inline get_gnss_system(sat::AbstractSatellite{S}) where S <: AbstractGNSSSystem = S
 
 """
 $(SIGNATURES)

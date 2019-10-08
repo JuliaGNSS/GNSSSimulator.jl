@@ -62,3 +62,4 @@ end
 @inline get_prn(si::ConstantDopplerStructuralInterference) = get_prn(si.sat)
 @inline get_amplitude(si::ConstantDopplerStructuralInterference) = get_amplitude(si.sat)
 @inline get_phase(si::ConstantDopplerStructuralInterference) = SatellitePhase(get_carrier_phase(si), get_code_phase(si))
+@inline get_gnss_system(si::ConstantDopplerStructuralInterference) = get_gnss_system(si.sat)

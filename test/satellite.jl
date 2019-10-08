@@ -36,6 +36,7 @@
         @test @inferred(get_existence(next_sat)) == true
         @test @inferred(get_amplitude(next_sat)) == 10^(45 / 20)
         @test @inferred(get_prn(next_sat)) == 1
+        @test @inferred(get_gnss_system(next_sat)) == GPSL1
 
         signal = @inferred GNSSSimulator.get_signal(next_phase, next_sat, 1.0 + 0.0im, Random.GLOBAL_RNG)
         @test signal ≈ 1.0 * 10^(45 / 20) * GNSSSignals.cis_vfast(π / 2 + 2π * 1100.0Hz / 2e6Hz) * get_code(GPSL1, 100.0 + (1023e3Hz + 1000.0Hz / 1540) / 2e6Hz, 1)
