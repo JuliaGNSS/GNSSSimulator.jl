@@ -25,17 +25,17 @@ pkg> add git@git.rwth-aachen.de:nav/GNSSSimulator.jl.git
 ## Usage
 
 ```julia
-using GNSSSimulator, Rotations
-using GNSSSimulator: Hz, dBHz, GPSL1
-gpsl1 = GPSL1()
+using GNSSSimulator
+import GNSSSimulator: GPSL1
+import Unitful: ms
 sample_freq = 2e6Hz
-sat = ConstantDopplerSatellite(1, gpsl1, carrier_doppler = 1000.0Hz, carrier_phase = π / 2, code_phase = 100.0, cn0 = 45dBHz)
+sat = ConstantDopplerSatellite(GPSL1, 1)
 emitters = (sat,)
-receiver = Receiver(1.0, RotXYZ(0.0, 0.0, 0.0), sqrt(sample_freq / 1Hz))
+receiver = Receiver(sample_freq)
 received_signal = ReceivedSignal(emitters, receiver)
-measurement1 = get_measurement(received_signal)
-next_received_signal = propagate(received_signal, 1/sample_freq)
-measurement2 = get_measurement(next_received_signal)
+measurement1 = get_measurement(2000, received_signal)
+next_received_signal = propagate(received_signal, 1ms)
+measurement2 = get_measurement(2000, next_received_signal)
 ```
 
 ## Todo
