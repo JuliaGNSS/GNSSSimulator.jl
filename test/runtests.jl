@@ -1,4 +1,15 @@
-using Test, GNSSSimulator, Rotations, CoordinateTransformations, StaticArrays, GNSSSignals, Random, Unitful, LinearAlgebra, PhasedArray
+using
+    Test,
+    GNSSSimulator,
+    Rotations,
+    CoordinateTransformations,
+    StaticArrays,
+    GNSSSignals,
+    Random,
+    Unitful,
+    LinearAlgebra,
+    PhasedArray
+    
 import Unitful: dB, Hz, kHz, MHz, GHz, dBHz, m, s, rad, °, ms, μs
 
 const EARTH_RADIUS = 6_360_000m

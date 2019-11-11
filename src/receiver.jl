@@ -18,14 +18,26 @@ function Receiver(
     attitude = RotXYZ(0,0,0),
     n0 = 1/Hz,
     noise_std = sqrt(n0 * sample_frequency)
+)
+    Receiver(
+        sample_frequency,
+        intermediate_frequency,
+        gain_phase_mism_crosstalk,
+        attitude,
+        noise_std
     )
-    Receiver(sample_frequency, intermediate_frequency, gain_phase_mism_crosstalk, attitude, noise_std)
 end
 
 function propagate(receiver::Receiver, Δt, rng)
     gain_phase_mism_crosstalk = propagate(receiver.gain_phase_mism_crosstalk, Δt, rng)
     attitude = propagate(receiver.attitude, Δt, rng)
-    Receiver(receiver.sample_frequency, receiver.intermediate_frequency, gain_phase_mism_crosstalk, attitude, receiver.noise_std)
+    Receiver(
+        receiver.sample_frequency,
+        receiver.intermediate_frequency,
+        gain_phase_mism_crosstalk,
+        attitude,
+        receiver.noise_std
+    )
 end
 
 function get_gain_phase_mism_crosstalk(receiver::Receiver)
