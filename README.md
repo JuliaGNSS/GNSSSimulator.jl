@@ -26,26 +26,18 @@ pkg> add git@git.rwth-aachen.de:nav/GNSSSimulator.jl.git
 
 ```julia
 using GNSSSimulator
-import GNSSSimulator: GPSL1
-import Unitful: ms
+using GNSSSimulator: GPSL1, Hz
 sample_freq = 2e6Hz
 sat = ConstantDopplerSatellite(GPSL1, 1)
 emitters = (sat,)
 receiver = Receiver(sample_freq)
-received_signal = ReceivedSignal(emitters, receiver)
-measurement1 = get_measurement(2000, received_signal)
-next_received_signal = propagate(received_signal, 1ms)
-measurement2 = get_measurement(2000, next_received_signal)
+measurement1, next_receiver1, next_emitters1 = get_measurement(2000, receiver, emitters)
+measurement2, next_receiver2, next_emitters2 = get_measurement(2000, next_receiver1, next_emitters1)
 ```
 
 ## Todo
 
 * DOA calculation based on absolute time and NMEA
-
-## Nice to have
-
-* Attitude and trajectory simulation based on Google API
-* Multipath simulation based on Google API
 
 ## License
 
