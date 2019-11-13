@@ -54,18 +54,21 @@ end
 
 function propagate(
     jammer::CWJammer,
+    num_samples,
     intermediate_frequency,
-    Δt,
+    sample_frequency,
     rng
 )
-    phase_delta = (intermediate_frequency + get_carrier_doppler(jammer)) * Δt
-    phase = mod(get_carrier_phase_2pi(jammer) + phase_delta + 0.5, 1) - 0.5
+    carrier_phase = (intermediate_frequency + get_carrier_doppler(jammer)) * num_samples /
+        sample_frequency + get_carrier_phase_2pi(jammer)
+    modded_carrier_phase = mod(carrier_phase + 0.5, 1) - 0.5
+    Δt = num_samples / sample_frequency
     exists = propagate(jammer.exists, Δt, rng)
     doa = propagate(jammer.doa, Δt, rng)
     CWJammer(
         jammer.id,
         get_carrier_doppler(jammer),
-        phase,
+        modded_carrier_phase,
         get_amplitude(jammer),
         exists,
         doa
@@ -112,7 +115,14 @@ Base.@propagate_inbounds function get_signal(
     temp * steer_vec
 end
 
-function propagate(jammer::NoiseJammer, intermediate_frequency, Δt, rng)
+function propagate(
+    jammer::NoiseJammer,
+    num_samples,
+    intermediate_frequency,
+    sample_frequency,
+    rng
+)
+    Δt = num_samples / sample_frequency
     exists = propagate(jammer.exists, Δt, rng)
     doa = propagate(jammer.doa, Δt, rng)
     NoiseJammer(jammer.id, get_amplitude(jammer), exists, doa)

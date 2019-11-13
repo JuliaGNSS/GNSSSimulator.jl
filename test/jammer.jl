@@ -63,8 +63,9 @@
 
         next_jammer = @inferred GNSSSimulator.propagate(
             jammer,
+            1,
             100.0Hz,
-            1μs,
+            1e6Hz,
             Random.GLOBAL_RNG
         )
         @test @inferred(get_carrier_phase(next_jammer)) ≈ mod2pi(
@@ -113,8 +114,9 @@
 
         next_jammer = @inferred GNSSSimulator.propagate(
             jammer,
+            1,
             100.0Hz,
-            1μs,
+            1e6Hz,
             Random.GLOBAL_RNG
         )
         @test @inferred(get_amplitude(next_jammer)) == 10

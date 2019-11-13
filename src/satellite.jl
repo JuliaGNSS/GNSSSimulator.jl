@@ -89,23 +89,26 @@ Propagates the satellite state over time
 """
 function propagate(
     sat::ConstantDopplerSatellite{S, D, E},
-    intermediate_frequency, Δt, rng
-) where {S, D, E, T}
-    code_delta = upreferred((get_code_frequency(S) + get_code_doppler(sat)) * Δt)
-    code_phase = mod(
-        get_code_phase(sat) + code_delta,
-        get_code_length(S) * get_secondary_code_length(S)
-    )
-    carrier_delta = (intermediate_frequency + get_carrier_doppler(sat)) * Δt
-    carrier_phase = mod(get_carrier_phase_2pi(sat) + carrier_delta + 0.5, 1) - 0.5
+    num_samples,
+    intermediate_frequency,
+    sample_frequency,
+    rng
+) where {S, D, E}
+    carrier_phase = (intermediate_frequency + get_carrier_doppler(sat)) * num_samples /
+        sample_frequency + get_carrier_phase_2pi(sat)
+    modded_carrier_phase = mod(carrier_phase + 0.5, 1) - 0.5
+    code_phase = (get_code_frequency(S) + get_code_doppler(sat)) * num_samples /
+        sample_frequency + get_code_phase(sat)
+    modded_code_phase = mod(code_phase, get_code_length(S) * get_secondary_code_length(S))
+    Δt = num_samples / sample_frequency
     amplitude = propagate(sat.amplitude, Δt, rng)
     exists = propagate(sat.exists, Δt, rng)
     doa = propagate(sat.doa, Δt, rng)
     ConstantDopplerSatellite{S, D, E}(
         sat.prn,
         sat.carrier_doppler,
-        carrier_phase,
-        code_phase,
+        modded_carrier_phase,
+        modded_code_phase,
         amplitude,
         exists,
         doa

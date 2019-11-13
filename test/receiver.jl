@@ -1,7 +1,7 @@
 @testset "Receiver" begin
 
     receiver = Receiver(4e6Hz, 0.0Hz, SMatrix{4,4}(I), RotXYZ(0.0, 0.0, 0.0), 0.0)
-    next_receiver = GNSSSimulator.propagate(receiver, 1ms, Random.GLOBAL_RNG)
+    next_receiver = GNSSSimulator.propagate(receiver, 1000, Random.GLOBAL_RNG)
     @test get_gain_phase_mism_crosstalk(next_receiver) == SMatrix{4,4}(I)
     @test get_attitude(next_receiver) == RotXYZ(0.0, 0.0, 0.0)
     @test get_noise_std(next_receiver) == 0.0

@@ -99,8 +99,16 @@ Base.@propagate_inbounds function get_signal(
     get_signal(si.sat, phase, phase_wrap, steer_vec, rng)
 end
 
-function propagate(si::ConstantDopplerStructuralInterference, phase, Δt, rng)
-    ConstantDopplerStructuralInterference(propagate(si.sat, phase, Δt, rng))
+function propagate(
+    si::ConstantDopplerStructuralInterference,
+    num_samples,
+    intermediate_frequency,
+    sample_frequency,
+    rng
+)
+    ConstantDopplerStructuralInterference(
+        propagate(si.sat, num_samples, intermediate_frequency, sample_frequency, rng)
+    )
 end
 
 @inline get_doa(si::ConstantDopplerStructuralInterference) = get_doa(si.sat)

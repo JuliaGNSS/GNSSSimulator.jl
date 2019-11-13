@@ -9,8 +9,8 @@ using
     Unitful,
     LinearAlgebra,
     PhasedArray
-    
-import Unitful: dB, Hz, kHz, MHz, GHz, dBHz, m, s, rad, °, ms, μs
+
+import Unitful: dB, Hz, kHz, MHz, GHz, dBHz, m, s, rad, ms, μs
 
 const EARTH_RADIUS = 6_360_000m
 

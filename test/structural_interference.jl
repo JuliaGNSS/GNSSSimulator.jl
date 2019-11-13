@@ -50,7 +50,7 @@
     @test next_phase.carrier == 0.5 / 2 + 0.5 / 8 + 1110.0Hz / 2e6Hz
     @test next_phase.code == 110.0 + (1023e3Hz + 1010.0Hz / 1540) / 2e6Hz
 
-    next_si = @inferred GNSSSimulator.propagate(si, 100.0Hz, 1/2e6Hz, Random.GLOBAL_RNG)
+    next_si = @inferred GNSSSimulator.propagate(si, 1, 100.0Hz, 2e6Hz, Random.GLOBAL_RNG)
     @test @inferred(get_carrier_doppler(next_si)) == 1010Hz
     @test @inferred(get_code_doppler(next_si)) ≈ 1010Hz / 1540
     @test @inferred(get_carrier_phase(next_si)) ≈ π / 2 + π / 8 + 2π * 1110Hz / 2e6Hz

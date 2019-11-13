@@ -24,7 +24,13 @@
 
         signal = Vector{ComplexF64}(undef, 4000)
         rng = MersenneTwister(1234)
-        measurement = @inferred get_measurement!(signal, receiver, emitters, manifold, rng)
+        measurement, next_receiver, next_emitters = @inferred get_measurement!(
+            signal,
+            receiver,
+            emitters,
+            manifold,
+            rng
+        )
 
         x = 0:3999
         rng = MersenneTwister(1234)
@@ -40,20 +46,29 @@
         @test measurement ≈ test_signal
 
         rng = MersenneTwister(1234)
-        @test get_measurement(4000, receiver, emitters, manifold, rng) ≈ test_signal
+        measurement, next_receiver, next_emitters = @inferred get_measurement(
+            4000,
+            receiver,
+            emitters,
+            manifold,
+            rng
+        )
+        @test measurement ≈ test_signal
+
         rng = MersenneTwister(1234)
-        @test get_measurement(
+        measurement_f32, next_receiver, next_emitters = @inferred get_measurement(
             Float32,
             4000,
             receiver,
             emitters,
             manifold,
             rng
-        ) ≈ test_signal
+        )
+        @test measurement_f32 ≈ test_signal
 
         rng = MersenneTwister(1234)
-        next_receiver = GNSSSimulator.propagate(receiver, 1ms, rng)
-        next_emitters = GNSSSimulator.propagate(emitters, 0.0Hz, 1ms, rng)
+        next_receiver = GNSSSimulator.propagate(receiver, 1000, rng)
+        next_emitters = GNSSSimulator.propagate(emitters, 1000, 0.0Hz, 1e6Hz, rng)
         next_sat1 = next_emitters[1]
 
         @test get_carrier_doppler(next_sat1) == 1000Hz
@@ -93,7 +108,13 @@
         receiver = @inferred Receiver(4e6Hz, noise_std = 5.0)
 
         rng = MersenneTwister(1234)
-        measurement = @inferred get_measurement(4000, receiver, emitters, manifold, rng)
+        measurement, next_receiver, next_emitters = @inferred get_measurement(
+            4000,
+            receiver,
+            emitters,
+            manifold,
+            rng
+        )
 
         x = 0:3999
         rng = MersenneTwister(1234)
@@ -119,11 +140,17 @@
         receiver = @inferred Receiver(4e6Hz, noise_std = 5.0)
 
         rng = MersenneTwister(1234)
-        measurement1 = @inferred get_measurement(4000, receiver, emitters, manifold, rng)
+        measurement1, next_receiver, next_emitters = @inferred get_measurement(
+            4000,
+            receiver,
+            emitters,
+            manifold,
+            rng
+        )
 
-        next_receiver = GNSSSimulator.propagate(receiver, 1ms, rng)
-        next_emitters = GNSSSimulator.propagate(emitters, 0.0Hz, 1ms, rng)
-        measurement2 = @inferred get_measurement(
+        next_receiver = GNSSSimulator.propagate(receiver, 1000, rng)
+        next_emitters = GNSSSimulator.propagate(emitters, 1000, 0.0Hz, 1e6Hz, rng)
+        measurement2, next_receiver, next_emitters = @inferred get_measurement(
             4000,
             next_receiver,
             next_emitters,
@@ -163,7 +190,13 @@
         )
 
         rng = MersenneTwister(1234)
-        measurement = @inferred get_measurement(4000, receiver, emitters, manifold, rng)
+        measurement, next_receiver, next_emitters = @inferred get_measurement(
+            4000,
+            receiver,
+            emitters,
+            manifold,
+            rng
+        )
         x = 0:3999
         rng = MersenneTwister(1234)
         test_signal =

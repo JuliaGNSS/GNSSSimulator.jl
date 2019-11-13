@@ -87,10 +87,15 @@ end
         randn!(rng, signal)
         signal .*= get_noise_std(receiver)
     end
-    Δt = num_samples / get_sample_frequency(receiver)
-    #next_emitters = propagate(emitters, get_intermediate_frequency(receiver), Δt, rng)
-    next_receiver = propagate(receiver, Δt, rng)
-    next_receiver#, next_emitters
+    next_receiver = propagate(receiver, num_samples, rng)
+    next_emitters = propagate(
+        emitters,
+        num_samples,
+        get_intermediate_frequency(receiver),
+        get_sample_frequency(receiver),
+        rng
+    )
+    signal, next_receiver, next_emitters
 end
 
 function update_phase_wraps(phase_wraps, phases, emitters)
@@ -147,9 +152,12 @@ end
 
 function propagate(
     emitters::Tuple,
+    num_samples,
     intermediate_frequency,
-    Δt,
+    sample_frequency,
     rng
 )
-    map(emitter -> propagate(emitter, intermediate_frequency, Δt, rng), emitters)
+    map(emitters) do emitter
+        propagate(emitter, num_samples, intermediate_frequency, sample_frequency, rng)
+    end
 end

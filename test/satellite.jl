@@ -111,8 +111,9 @@
 
         next_sat = @inferred GNSSSimulator.propagate(
             sat,
+            1,
             100.0Hz,
-            1/2e6Hz,
+            2e6Hz,
             Random.GLOBAL_RNG
         )
 

@@ -28,7 +28,8 @@ function Receiver(
     )
 end
 
-function propagate(receiver::Receiver, Δt, rng)
+function propagate(receiver::Receiver, num_samples, rng)
+    Δt = num_samples / get_sample_frequency(receiver)
     gain_phase_mism_crosstalk = propagate(receiver.gain_phase_mism_crosstalk, Δt, rng)
     attitude = propagate(receiver.attitude, Δt, rng)
     Receiver(
