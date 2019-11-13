@@ -62,9 +62,9 @@
         @test phase_wrap == GNSSSimulator.SatellitePhaseWrap(0, 0)
 
         signal = @inferred GNSSSimulator.get_signal(
+            sat,
             phase,
             phase_wrap,
-            sat,
             1.0 + 0.0im,
             Random.GLOBAL_RNG
         )
@@ -72,9 +72,9 @@
         # cis(π / 2) == cis_vfast(π / 2)
 
         signal = @inferred GNSSSimulator.get_signal(
+            sat,
             phase,
             phase_wrap,
-            sat,
             SVector(1.0im, 2.0im),
             Random.GLOBAL_RNG
         )
@@ -99,9 +99,9 @@
         @test next_phase_wrap == GNSSSimulator.SatellitePhaseWrap(0, 0)
 
         signal = @inferred GNSSSimulator.get_signal(
+            sat,
             next_phase,
             next_phase_wrap,
-            sat,
             1.0 + 0.0im,
             Random.GLOBAL_RNG
         )

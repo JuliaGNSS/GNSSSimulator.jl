@@ -90,13 +90,13 @@ function update_phase_wrap(
 end
 
 Base.@propagate_inbounds function get_signal(
+    si::ConstantDopplerStructuralInterference,
     phase::SatellitePhase,
     phase_wrap::SatellitePhaseWrap,
-    si::ConstantDopplerStructuralInterference,
     steer_vec,
     rng
 )
-    get_signal(phase, phase_wrap, si.sat, steer_vec, rng)
+    get_signal(si.sat, phase, phase_wrap, steer_vec, rng)
 end
 
 function propagate(si::ConstantDopplerStructuralInterference, phase, Δt, rng)

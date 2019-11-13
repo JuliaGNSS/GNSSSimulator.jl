@@ -96,10 +96,11 @@ function update_phase_wrap(
     CWJammerPhaseWrap(wrap)
 end
 
+
 Base.@propagate_inbounds function get_signal(
+    jammer::CWJammer,
     phase::CWJammerPhase,
     phase_wrap::CWJammerPhaseWrap,
-    jammer::CWJammer,
     steer_vec::S,
     rng
 ) where {
@@ -107,8 +108,8 @@ Base.@propagate_inbounds function get_signal(
     S <: Union{SVector{N, Complex{T}}, Complex{T}, T} where N
 }
     temp = get_existence(jammer) * T(get_amplitude(jammer)) *
-        GNSSSignals.cis_vfast(T(2π * phase.carrier - phase_wrap.carrier))
-    steer_vec * temp
+        GNSSSignals.cis_vfast(T(2π * (phase.carrier - phase_wrap.carrier)))
+    temp * steer_vec
 end
 
 function propagate(jammer::NoiseJammer, intermediate_frequency, Δt, rng)
@@ -139,9 +140,9 @@ function update_phase_wrap(
 end
 
 Base.@propagate_inbounds function get_signal(
+    jammer::NoiseJammer,
     phase::NoiseJammerPhase,
     phase_wrap::NoiseJammerPhaseWrap,
-    jammer::NoiseJammer,
     steer_vec::S,
     rng
 ) where {
@@ -149,7 +150,7 @@ Base.@propagate_inbounds function get_signal(
     S <: Union{SVector{N, Complex{T}}, Complex{T}, T} where N
 }
     temp = get_existence(jammer) * T(get_amplitude(jammer)) * randn(rng, Complex{T})
-    steer_vec * temp
+    temp * steer_vec
 end
 
 @inline get_carrier_phase(jammer::CWJammer) = 2π * jammer.phase

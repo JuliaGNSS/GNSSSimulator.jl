@@ -33,9 +33,9 @@
         @test phase_wrap == GNSSSimulator.CWJammerPhaseWrap(0)
 
         signal = @inferred GNSSSimulator.get_signal(
+            jammer,
             phase,
             phase_wrap,
-            jammer,
             1.0 + 0.0im,
             Random.GLOBAL_RNG
         )
@@ -53,9 +53,9 @@
         @test next_phase_wrap == GNSSSimulator.CWJammerPhaseWrap(1)
 
         signal = @inferred GNSSSimulator.get_signal(
+            jammer,
             next_phase,
             next_phase_wrap,
-            jammer,
             1.0 + 0.0im,
             Random.GLOBAL_RNG
         )
@@ -92,9 +92,9 @@
 
         rng = MersenneTwister(1234)
         signal = @inferred GNSSSimulator.get_signal(
+            jammer,
             phase,
             phase_wrap,
-            jammer,
             SVector(1.0im, 2.0im),
             rng
         )
@@ -124,9 +124,9 @@
 
         rng = MersenneTwister(1234)
         signal = @inferred GNSSSimulator.get_signal(
+            jammer,
             next_phase,
             next_phase_wrap,
-            jammer,
             SVector(1.0im, 2.0im),
             rng
         )

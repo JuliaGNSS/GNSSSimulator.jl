@@ -28,7 +28,7 @@ function get_measurement(
     emitters,
     manifold::AbstractManifold{1} = IdealManifold(),
     rng = Random.GLOBAL_RNG
-) where N
+)
     signal = Vector{Complex{Float64}}(undef, num_samples)
     get_measurement!(signal, receiver, emitters, manifold, rng)
 end
@@ -44,62 +44,81 @@ function get_measurement(
     get_measurement!(signal, receiver, emitters, manifold, rng)
 end
 
-function get_measurement!(
+@unroll function get_measurement!(
     signal::Union{Matrix{Complex{T}}, Vector{Complex{T}}},
     receiver::Receiver,
     emitters,
-    manifold = IdealManifold(),
+    manifold::AbstractManifold{N} = IdealManifold(),
     rng = Random.GLOBAL_RNG
-) where {T <: Union{Float32, Float64}}
+) where {N, T <: Union{Float32, Float64}}
     if length(emitters) > 0
         phase_wraps = map(init_phase_wrap, emitters)
-        steer_vecs = map(emitters) do emitter
-            convert_complex_or_real.(
-                T,
-                get_steer_vec(manifold, get_doa(emitter), get_attitude(receiver))
-            )
-        end
         C = convert_complex_or_real.(T, get_gain_phase_mism_crosstalk(receiver))
+        steer_vecs = get_steer_vecs(T, emitters, receiver, manifold)
+        num_samples = get_num_samples(signal)
+        @inbounds @fastmath for i = 1:num_samples
 
-        @inbounds @fastmath for i = 1:get_num_samples(signal)
+            phases = calc_phases(
+                emitters,
+                get_intermediate_frequency(receiver),
+                get_sample_frequency(receiver),
+                i - 1
+            )
+            phase_wraps = update_phase_wraps(phase_wraps, phases, emitters)
 
-            phases = map(emitters) do emitter
-                calc_phase(
-                    emitter,
-                    i - 1,
-                    get_intermediate_frequency(receiver),
-                    get_sample_frequency(receiver)
+            signal_sample = randn(rng, get_temp_signal_type(Val(N), T)) *
+                get_noise_std(receiver)
+
+            @unroll for s = 1:length(emitters)
+                signal_sample = signal_sample + get_signal(
+                    emitters[s],
+                    phases[s],
+                    phase_wraps[s],
+                    steer_vecs[s],
+                    rng
                 )
             end
-            phase_wraps = map(phase_wraps, phases, emitters) do phase_wrap, phase, emitter
-                update_phase_wrap(phase_wrap, phase, emitter)
-            end
-#            temp = zero(typeof(steer_vecs[1]))
-#            temp = get_signal(phases[1], emitters[1], steer_vecs[1], rng)
-#            for s = 1:length(emitters)
-#                temp = temp + get_signal(phases[s], emitters[s], steer_vecs[s], rng)
-#            end
-            emitter_signals = map(
-                phases,
-                phase_wraps,
-                emitters,
-                steer_vecs
-            ) do phase, phase_wrap, emitter, steer_vec
-                get_signal(phase, phase_wrap, emitter, steer_vec, rng)
-            end
-            emitter_signal = sum(emitter_signals)
-#            temp = Base.mapfoldl(pes -> get_signal(pes..., rng), +, zip(phases, emitters, steer_vecs))
-#            temp = sum_over_signals(phases, emitters, steer_vecs, rng)
-            #temp = sum(temps)
-            emitter_signal = C * (emitter_signal + randn(rng, typeof(emitter_signal)) *
-                get_noise_std(receiver))
-            set_signal!(signal, i, emitter_signal)
+
+            signal_sample = C * signal_sample
+
+            set_signal!(signal, i, signal_sample)
         end
     else
         randn!(rng, signal)
         signal .*= get_noise_std(receiver)
     end
-    signal
+    Δt = num_samples / get_sample_frequency(receiver)
+    #next_emitters = propagate(emitters, get_intermediate_frequency(receiver), Δt, rng)
+    next_receiver = propagate(receiver, Δt, rng)
+    next_receiver#, next_emitters
+end
+
+function update_phase_wraps(phase_wraps, phases, emitters)
+    map(phase_wraps, phases, emitters) do phase_wrap, phase, emitter
+        update_phase_wrap(phase_wrap, phase, emitter)
+    end
+end
+
+function calc_phases(emitters, intermediate_frequency, sample_frequency, index)
+    map(emitters) do emitter
+        calc_phase(emitter, index, intermediate_frequency, sample_frequency)
+    end
+end
+
+function get_steer_vecs(::Type{T}, emitters, receiver, manifold) where T <: Union{Float32, Float64}
+    map(emitters) do emitter
+        convert_complex_or_real.(T,
+            get_steer_vec(manifold, get_doa(emitter), get_attitude(receiver))
+        )
+    end
+end
+
+function get_temp_signal_type(::Val{N}, ::Type{T}) where {N, T}
+    SVector{N, Complex{T}}
+end
+
+function get_temp_signal_type(::Val{1}, ::Type{T}) where {T}
+    Complex{T}
 end
 
 function convert_complex_or_real(::Type{T}, a::Complex) where T <: Union{Float32, Float64}
@@ -127,10 +146,10 @@ end
 end
 
 function propagate(
-    emitters::Tuple{<:AbstractEmitter},
+    emitters::Tuple,
     intermediate_frequency,
     Δt,
-    rng = Random.GLOBAL_RNG
+    rng
 )
     map(emitter -> propagate(emitter, intermediate_frequency, Δt, rng), emitters)
 end

@@ -27,9 +27,9 @@
     @test phase_wrap == GNSSSimulator.SatellitePhaseWrap(0, 0)
 
     signal = @inferred GNSSSimulator.get_signal(
+        si,
         phase,
         phase_wrap,
-        si,
         1.0 + 0.0im,
         Random.GLOBAL_RNG
     )
@@ -37,9 +37,9 @@
         get_code(GPSL1, 110.0, 1)
 
     signal = @inferred GNSSSimulator.get_signal(
+        si,
         phase,
         phase_wrap,
-        si,
         SVector(1.0im, 2.0im),
         Random.GLOBAL_RNG
     )

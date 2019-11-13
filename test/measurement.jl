@@ -37,11 +37,6 @@
             10^(45 / 20) .+
             randn(rng, ComplexF64, 4000) .* 5.0
 
-        using PyPlot
-        pygui(true)
-        plot(real.(measurement))
-        plot(real.(test_signal))
-
         @test measurement ≈ test_signal
 
         rng = MersenneTwister(1234)
@@ -56,8 +51,9 @@
             rng
         ) ≈ test_signal
 
-        next_receiver = propagate(receiver, 1ms)
-        next_emitters = propagate(emitters, 0.0Hz, 1ms)
+        rng = MersenneTwister(1234)
+        next_receiver = GNSSSimulator.propagate(receiver, 1ms, rng)
+        next_emitters = GNSSSimulator.propagate(emitters, 0.0Hz, 1ms, rng)
         next_sat1 = next_emitters[1]
 
         @test get_carrier_doppler(next_sat1) == 1000Hz
@@ -95,10 +91,9 @@
         )
         emitters = (sat1,sat2)
         receiver = @inferred Receiver(4e6Hz, noise_std = 5.0)
-        received_signal = @inferred ReceivedSignal(emitters, receiver)
 
         rng = MersenneTwister(1234)
-        measurement = @inferred get_measurement(4000, received_signal, manifold, rng)
+        measurement = @inferred get_measurement(4000, receiver, emitters, manifold, rng)
 
         x = 0:3999
         rng = MersenneTwister(1234)
@@ -122,12 +117,19 @@
         )
         emitters = (sat1,)
         receiver = @inferred Receiver(4e6Hz, noise_std = 5.0)
-        received_signal = @inferred ReceivedSignal(emitters, receiver)
 
         rng = MersenneTwister(1234)
-        measurement1 = @inferred get_measurement(4000, received_signal, manifold, rng)
-        next_received_signal = propagate(received_signal, 1ms)
-        measurement2 = @inferred get_measurement(4000, next_received_signal, manifold, rng)
+        measurement1 = @inferred get_measurement(4000, receiver, emitters, manifold, rng)
+
+        next_receiver = GNSSSimulator.propagate(receiver, 1ms, rng)
+        next_emitters = GNSSSimulator.propagate(emitters, 0.0Hz, 1ms, rng)
+        measurement2 = @inferred get_measurement(
+            4000,
+            next_receiver,
+            next_emitters,
+            manifold,
+            rng
+        )
         measurement = [measurement1; measurement2]
 
         x = 0:7999
@@ -159,10 +161,9 @@
             noise_std = 5.0,
             gain_phase_mism_crosstalk = SMatrix{2,2,ComplexF64}(I)
         )
-        received_signal = @inferred ReceivedSignal(emitters, receiver)
 
         rng = MersenneTwister(1234)
-        measurement = @inferred get_measurement(4000, received_signal, manifold, rng)
+        measurement = @inferred get_measurement(4000, receiver, emitters, manifold, rng)
         x = 0:3999
         rng = MersenneTwister(1234)
         test_signal =

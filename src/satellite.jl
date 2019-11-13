@@ -142,9 +142,9 @@ function update_phase_wrap(
 end
 
 Base.@propagate_inbounds function get_signal(
+    sat::ConstantDopplerSatellite{S},
     phase::SatellitePhase,
     phase_wrap::SatellitePhaseWrap,
-    sat::ConstantDopplerSatellite{S},
     steer_vec::V,
     rng
 ) where {
@@ -155,8 +155,8 @@ Base.@propagate_inbounds function get_signal(
     temp = get_existence(sat) *
         T(get_amplitude(sat)) *
         get_code_unsafe(S, phase.code - phase_wrap.code, sat.prn) *
-        GNSSSignals.cis_vfast(T(2π * phase.carrier - phase_wrap.carrier))
-    steer_vec * temp
+        GNSSSignals.cis_vfast(T(2π * (phase.carrier - phase_wrap.carrier)))
+    temp * steer_vec
 end
 
 @inline get_carrier_doppler(sat::AbstractSatellite) = sat.carrier_doppler

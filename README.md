@@ -42,11 +42,6 @@ measurement2 = get_measurement(2000, next_received_signal)
 
 * DOA calculation based on absolute time and NMEA
 
-## Nice to have
-
-* Attitude and trajectory simulation based on Google API
-* Multipath simulation based on Google API
-
 ## License
 
 MIT License
