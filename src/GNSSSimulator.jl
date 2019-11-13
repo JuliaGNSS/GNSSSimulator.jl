@@ -10,7 +10,8 @@ module GNSSSimulator
         LinearAlgebra,
         Parameters,
         PhasedArray,
-        Random
+        Random,
+        Unrolled
 
     import Base.transpose
     import Unitful: Hz, rad, s, m, dB, °, dBHz, upreferred
@@ -34,8 +35,6 @@ export
     NoiseJammer,
     Noise,
     Receiver,
-    ReceivedSignal,
-    propagate,
     get_attitude,
     get_doa,
     get_existence,
@@ -51,8 +50,6 @@ export
     get_noise_std,
     get_sample_frequency,
     get_intermediate_frequency,
-    get_receiver,
-    get_emitters,
     get_measurement!,
     get_measurement
 

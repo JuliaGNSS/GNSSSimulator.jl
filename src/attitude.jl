@@ -39,8 +39,23 @@ struct NoisyDynamicAttitude <: AbstractAttitude
     time::typeof(1.0s)
 end
 
-function NoisyDynamicAttitude(attitudes::Vector{<:RotXYZ}, sample_freq, roll_std, pitch_std, yaw_std; time = 0.0s)
-    NoisyDynamicAttitude(first(attitudes), attitudes, sample_freq, roll_std, pitch_std, yaw_std, time)
+function NoisyDynamicAttitude(
+    attitudes::Vector{<:RotXYZ},
+    sample_freq,
+    roll_std,
+    pitch_std,
+    yaw_std;
+    time = 0.0s
+)
+    NoisyDynamicAttitude(
+        first(attitudes),
+        attitudes,
+        sample_freq,
+        roll_std,
+        pitch_std,
+        yaw_std,
+        time
+    )
 end
 
 @with_kw struct NoisyLinearDynamicAttitude <: AbstractAttitude
@@ -54,8 +69,25 @@ end
     yaw_std::Float64
 end
 
-function NoisyLinearDynamicAttitude(attitude::RotXYZ, Δroll, Δpitch, Δyaw, roll_std, pitch_std, yaw_std)
-    NoisyLinearDynamicAttitude(attitude, attitude, Δroll, Δpitch, Δyaw, roll_std, pitch_std, yaw_std)
+function NoisyLinearDynamicAttitude(
+    attitude::RotXYZ,
+    Δroll,
+    Δpitch,
+    Δyaw,
+    roll_std,
+    pitch_std,
+    yaw_std
+)
+    NoisyLinearDynamicAttitude(
+        attitude,
+        attitude,
+        Δroll,
+        Δpitch,
+        Δyaw,
+        roll_std,
+        pitch_std,
+        yaw_std
+    )
 end
 
 function get_attitude(attitude::A) where A <: AbstractAttitude
@@ -82,7 +114,11 @@ Simulates a static noisy attitude in radian.
 """
 function propagate(attitude::NoisyStaticAttitude, Δt, rng)
     T = attitude.base_attitude
-    next_T = RotXYZ(T.theta1 + randn(rng) * attitude.roll_std, T.theta2 + randn(rng) * attitude.pitch_std, T.theta3 + randn(rng) * attitude.yaw_std)
+    next_T = RotXYZ(
+        T.theta1 + randn(rng) * attitude.roll_std,
+        T.theta2 + randn(rng) * attitude.pitch_std,
+        T.theta3 + randn(rng) * attitude.yaw_std
+    )
     NoisyStaticAttitude(next_T, T, attitude.roll_std, attitude.pitch_std, attitude.yaw_std)
 end
 
@@ -110,8 +146,20 @@ If time index exceeds data length, last available value is returned.
 function propagate(attitude::NoisyDynamicAttitude, Δt, rng)
     next_time = attitude.time + Δt
     T = get_sampled_value(attitude.time, attitude.sample_freq, attitude.attitudes)
-    next_T = RotXYZ(T.theta1 + randn(rng) * attitude.roll_std, T.theta2 + randn(rng) * attitude.pitch_std, T.theta3 + randn(rng) * attitude.yaw_std)
-    NoisyDynamicAttitude(next_T, attitude.attitudes, attitude.sample_freq, attitude.roll_std, attitude.pitch_std, attitude.yaw_std, next_time)
+    next_T = RotXYZ(
+        T.theta1 + randn(rng) * attitude.roll_std,
+        T.theta2 + randn(rng) * attitude.pitch_std,
+        T.theta3 + randn(rng) * attitude.yaw_std
+    )
+    NoisyDynamicAttitude(
+        next_T,
+        attitude.attitudes,
+        attitude.sample_freq,
+        attitude.roll_std,
+        attitude.pitch_std,
+        attitude.yaw_std,
+        next_time
+    )
 end
 
 """
@@ -120,7 +168,11 @@ $(SIGNATURES)
 Simulates a linearly time-varying noise-free attitude in radian.
 """
 function propagate(attitude::LinearDynamicAttitude, Δt, rng)
-    next_attitude = RotXYZ(attitude.attitude.theta1 + attitude.Δroll * Δt, attitude.attitude.theta2 + attitude.Δpitch * Δt, attitude.attitude.theta3 + attitude.Δyaw * Δt)
+    next_attitude = RotXYZ(
+        attitude.attitude.theta1 + attitude.Δroll * Δt,
+        attitude.attitude.theta2 + attitude.Δpitch * Δt,
+        attitude.attitude.theta3 + attitude.Δyaw * Δt
+    )
     LinearDynamicAttitude(next_attitude, attitude.Δroll, attitude.Δpitch, attitude.Δyaw)
 end
 
@@ -131,7 +183,24 @@ Simulates a linearly time-varying noisy attitude in radian.
 """
 function propagate(attitude::NoisyLinearDynamicAttitude, Δt, rng)
     T = attitude.base_attitude
-    next_T = RotXYZ(T.theta1 + attitude.Δroll * Δt, T.theta2 + attitude.Δpitch * Δt, T.theta3 + attitude.Δyaw * Δt)
-    noisy_next_T = RotXYZ(next_T.theta1 + randn(rng) * attitude.roll_std, next_T.theta2 + randn(rng) * attitude.pitch_std, next_T.theta3 + randn(rng) * attitude.yaw_std)
-    NoisyLinearDynamicAttitude(noisy_next_T, next_T, attitude.Δroll, attitude.Δpitch, attitude.Δyaw, attitude.roll_std, attitude.pitch_std, attitude.yaw_std)
+    next_T = RotXYZ(
+        T.theta1 + attitude.Δroll * Δt,
+        T.theta2 + attitude.Δpitch * Δt,
+        T.theta3 + attitude.Δyaw * Δt
+    )
+    noisy_next_T = RotXYZ(
+        next_T.theta1 + randn(rng) * attitude.roll_std,
+        next_T.theta2 + randn(rng) * attitude.pitch_std,
+        next_T.theta3 + randn(rng) * attitude.yaw_std
+    )
+    NoisyLinearDynamicAttitude(
+        noisy_next_T,
+        next_T,
+        attitude.Δroll,
+        attitude.Δpitch,
+        attitude.Δyaw,
+        attitude.roll_std,
+        attitude.pitch_std,
+        attitude.yaw_std
+    )
 end
