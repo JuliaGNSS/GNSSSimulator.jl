@@ -84,7 +84,7 @@ end
 function update_phase_wrap(
     phase_wrap::SatellitePhaseWrap,
     phase::SatellitePhase,
-    sat::ConstantDopplerStructuralInterference,
+    si::ConstantDopplerStructuralInterference,
 ) where {S <: AbstractGNSSSystem}
     update_phase_wrap(phase_wrap, phase, si.sat)
 end
