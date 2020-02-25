@@ -7,14 +7,14 @@ struct ConstantDopplerStructuralInterference{
 end
 
 function ConstantDopplerStructuralInterference(
-    sat::ConstantDopplerSatellite{S, D, E},
+    sat::ConstantDopplerSatellite{S},
     signal_amplification;
     added_carrier_doppler = NaN*Hz,
     added_carrier_phase = NaN,
     added_code_phase = NaN,
     amplitude = NaN,
-    exists = true,
-    doa = SVector(0,0,1),
+    exists::E = true,
+    doa::D = SVector(0,0,1),
     added_relative_velocity = 0.0m/s,
     added_signal_path = 0.0m
 ) where {
