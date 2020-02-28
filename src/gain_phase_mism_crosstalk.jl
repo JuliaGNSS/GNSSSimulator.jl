@@ -1,27 +1,28 @@
-abstract type AbstractGainPhaseMismCrosstalk end
+abstract type AbstractGainPhaseMismCrosstalk{T} end
 
 """
 (a * t^e + b) / (t^e + 1)
 """
 struct AsymptoticGainPhaseMismCrosstalk{
         N,
+        T <: AbstractFloat,
         E <: Union{Float64, Int64},
-        T <: SMatrix{N, N, ComplexF64}
-    } <: AbstractGainPhaseMismCrosstalk
-    a::SVector{N, Float64}
-    b::SVector{N, Float64}
+        CT <: SMatrix{N, N, Complex{T}}
+    } <: AbstractGainPhaseMismCrosstalk{T}
+    a::SVector{N, T}
+    b::SVector{N, T}
     e::E
-    C::T
+    C::CT
     t::typeof(1.0s)
 end
 
 function AsymptoticGainPhaseMismCrosstalk(
-    a::SVector{N, Float64},
-    b::SVector{N, Float64};
+    a::SVector{N, T},
+    b::SVector{N, T};
     e = 2,
-    C = SMatrix{N,N,ComplexF64}(I),
+    C = SMatrix{N,N,Complex{T}}(I),
     t = 0.0s
-) where N
+) where {N, T <: AbstractFloat}
     AsymptoticGainPhaseMismCrosstalk(a, b, e, C, t)
 end
 

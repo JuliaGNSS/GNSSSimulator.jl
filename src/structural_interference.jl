@@ -1,18 +1,18 @@
-abstract type AbstractStructuralInterference <: AbstractEmitter end
+abstract type AbstractStructuralInterference{T} <: AbstractEmitter{T} end
 
 struct ConstantDopplerStructuralInterference{
-    S <: ConstantDopplerSatellite
-} <: AbstractStructuralInterference
-    sat::S
+    T <: AbstractFloat,
+    CS <: ConstantDopplerSatellite{<: AbstractGNSSSystem, T}
+} <: AbstractStructuralInterference{T}
+    sat::CS
 end
 
 function ConstantDopplerStructuralInterference(
     sat::ConstantDopplerSatellite{S},
-    signal_amplification;
+    signal_amplification::Unitful.Gain{Unitful.Decibel, :?, <:Real};
     added_carrier_doppler = NaN*Hz,
     added_carrier_phase = NaN,
     added_code_phase = NaN,
-    amplitude = NaN,
     exists::E = true,
     doa::D = SVector(0,0,1),
     added_relative_velocity = 0.0m/s,
@@ -53,50 +53,32 @@ function ConstantDopplerStructuralInterference(
     else
         code_phase = mod(get_code_phase(sat) + added_code_phase, get_code_length(S))
     end
-    if isnan(amplitude)
-        amplitude = get_amplitude(sat) * sqrt(uconvertp(NoUnits, signal_amplification))
-    end
-    sat = ConstantDopplerSatellite{S, D, E}(
+    cn0 = get_carrier_to_noise_density_ratio(sat) + signal_amplification
+    carrier_code = StructArray{Complex{Int16}}(undef, 0)
+    signal = StructArray{Complex{eltype(float(cn0.val.val))}}(undef, 0)
+    sat = ConstantDopplerSatellite{S, eltype(float(cn0.val.val)), D, E, eltype(float(cn0))}(
         get_prn(sat),
         carrier_doppler,
         carrier_phase,
         code_phase,
-        amplitude,
+        cn0,
         exists,
-        doa
+        doa,
+        carrier_code,
+        signal
     )
     ConstantDopplerStructuralInterference(sat)
 end
 
-function calc_phase(
+function gen_signal!(
     si::ConstantDopplerStructuralInterference,
-    index,
+    sample_frequency,
     intermediate_frequency,
-    sample_frequency
-)
-    calc_phase(si.sat, index, intermediate_frequency, sample_frequency)
-end
-
-function init_phase_wrap(si::ConstantDopplerStructuralInterference)
-    init_phase_wrap(si.sat)
-end
-
-function update_phase_wrap(
-    phase_wrap::SatellitePhaseWrap,
-    phase::SatellitePhase,
-    si::ConstantDopplerStructuralInterference,
-) where {S <: AbstractGNSSSystem}
-    update_phase_wrap(phase_wrap, phase, si.sat)
-end
-
-Base.@propagate_inbounds function get_signal(
-    si::ConstantDopplerStructuralInterference,
-    phase::SatellitePhase,
-    phase_wrap::SatellitePhaseWrap,
-    steer_vec,
+    n0,
+    num_samples::Integer,
     rng
 )
-    get_signal(si.sat, phase, phase_wrap, steer_vec, rng)
+    gen_signal!(si.sat, sample_frequency, intermediate_frequency, n0, num_samples, rng)
 end
 
 function propagate(
@@ -121,5 +103,8 @@ end
     get_carrier_phase(si.sat)
 @inline get_code_phase(si::ConstantDopplerStructuralInterference) = get_code_phase(si.sat)
 @inline get_prn(si::ConstantDopplerStructuralInterference) = get_prn(si.sat)
-@inline get_amplitude(si::ConstantDopplerStructuralInterference) = get_amplitude(si.sat)
+@inline get_amplitude(si::ConstantDopplerStructuralInterference, n0) =
+    get_amplitude(si.sat, n0)
 @inline get_gnss_system(si::ConstantDopplerStructuralInterference) = get_gnss_system(si.sat)
+@inline get_carrier_to_noise_density_ratio(si::ConstantDopplerStructuralInterference) =
+    get_carrier_to_noise_density_ratio(si.sat)

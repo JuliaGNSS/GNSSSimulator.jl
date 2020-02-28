@@ -20,9 +20,9 @@
             cn0 = 45dBHz
         )
         sats = (sat1,sat2)
-        receiver = @inferred Receiver(4e6Hz, noise_std = 5.0)
+        receiver = @inferred Receiver(2.5e6Hz)
 
-        signal = Vector{ComplexF64}(undef, 4000)
+        signal = StructArray{ComplexF64}(undef, 2500)
         rng = MersenneTwister(1234)
         measurement, next_receiver, next_sats = @inferred get_measurement!(
             signal,
@@ -32,50 +32,76 @@
             rng
         )
 
-        x = 0:3999
+        carrier = StructArray{Complex{Int16}}(undef, 2500)
+        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        reference_signal = carrier .*
+            get_code.(GPSL1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            sqrt(10^(45 / 10)) ./ 1 << 7
+        fpcarrier!(carrier, 500.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        reference_signal += carrier .*
+            get_code.(GPSL1, (0:2499) .* (1023e3 + 500 / 1540) ./ 2.5e6 .+ 50, 2) .*
+            sqrt(10^(45 / 10)) ./ 1 << 7
         rng = MersenneTwister(1234)
-        test_signal =
-            GNSSSignals.cis_vfast.(mod2pi.(π / 2 .+ 2π * 1000Hz / 4e6Hz * x .+ π) .- π) .*
-            get_code.(GPSL1, 100 .+ (1023e3Hz + 1000Hz / 1540) / 4e6Hz * x, 1) .*
-            10^(45 / 20) .+
-            GNSSSignals.cis_vfast.(mod2pi.(π / 2 .+ 2π * 500Hz / 4e6Hz * x .+ π) .- π) .*
-            get_code.(GPSL1, 50 .+ (1023e3Hz + 500Hz / 1540) / 4e6Hz * x, 2) .*
-            10^(45 / 20) .+
-            randn(rng, ComplexF64, 4000) .* 5.0
+        reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
+        @test measurement ≈ reference_signal
 
-        @test measurement ≈ test_signal
-
-        @test next_receiver == GNSSSimulator.propagate(receiver, 4000, rng)
-        @test next_sats == GNSSSimulator.propagate(sats, 4000, 0.0Hz, 4e6Hz, rng)
+        @test next_receiver == GNSSSimulator.propagate(receiver, 2500, rng)
+        @test next_sats == GNSSSimulator.propagate.(sats, 2500, 0.0Hz, 2.5e6Hz, Ref(rng))
 
         rng = MersenneTwister(1234)
         measurement, next_receiver, next_sats = @inferred get_measurement(
-            4000,
+            2500,
             receiver,
             sats,
             manifold,
             rng
         )
-        @test measurement ≈ test_signal
+        @test measurement ≈ reference_signal
 
+        sat1f32 = ConstantDopplerSatellite(
+            GPSL1,
+            1,
+            carrier_doppler = 1000.0Hz,
+            carrier_phase = π / 2,
+            code_phase = 100.0,
+            cn0 = Float32(45)dBHz
+        )
+        sat2f32 = ConstantDopplerSatellite(
+            GPSL1,
+            2,
+            carrier_doppler = 500.0Hz,
+            carrier_phase = π / 2,
+            code_phase = 50.0,
+            cn0 = Float32(45)dBHz
+        )
+        satsf32 = (sat1f32,sat2f32)
+        receiverf32 = @inferred Receiver(2.5e6Hz, gain_phase_mism_crosstalk = Float32(1.0))
+
+        signalf32 = StructArray{ComplexF32}(undef, 2500)
         rng = MersenneTwister(1234)
-        measurement_f32, next_receiver, next_sats = @inferred get_measurement(
-            Float32,
-            4000,
-            receiver,
-            sats,
+        measurementf32, next_receiverf32, next_satsf32 = @inferred get_measurement!(
+            signalf32,
+            receiverf32,
+            satsf32,
             manifold,
             rng
         )
-        @test measurement_f32 ≈ test_signal
+        @test measurementf32 ≈ reference_signal
 
         rng = MersenneTwister(1234)
-        @test next_receiver == GNSSSimulator.propagate(receiver, 4000, rng)
-        @test next_sats == GNSSSimulator.propagate(sats, 4000, 0.0Hz, 4e6Hz, rng)
+        measurementf32, next_receiver, next_sats = @inferred get_measurement(
+            2500,
+            receiverf32,
+            satsf32,
+            manifold,
+            rng
+        )
+        @test measurementf32 ≈ reference_signal
     end
 
     @testset "Non existing Emitter" begin
         manifold = IdealManifold()
+
         sat1 = ConstantDopplerSatellite(
             GPSL1,
             1,
@@ -94,25 +120,26 @@
             exists = false
         )
         sats = (sat1,sat2)
-        receiver = @inferred Receiver(4e6Hz, noise_std = 5.0)
+        receiver = @inferred Receiver(2.5e6Hz)
 
+        signal = StructArray{ComplexF64}(undef, 2500)
         rng = MersenneTwister(1234)
-        measurement, next_receiver, next_sats = @inferred get_measurement(
-            4000,
+        measurement, next_receiver, next_sats = @inferred get_measurement!(
+            signal,
             receiver,
             sats,
             manifold,
             rng
         )
 
-        x = 0:3999
+        carrier = StructArray{Complex{Int16}}(undef, 2500)
+        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        reference_signal = carrier .*
+            get_code.(GPSL1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            sqrt(10^(45 / 10)) ./ 1 << 7
         rng = MersenneTwister(1234)
-        test_signal =
-            GNSSSignals.cis_vfast.(mod2pi.(π / 2 .+ 2π * 1000Hz / 4e6Hz * x .+ π) .- π) .*
-            get_code.(GPSL1, 100 .+ (1023e3Hz + 1000Hz / 1540) / 4e6Hz * x, 1) .*
-            10^(45 / 20) .+
-            randn(rng, ComplexF64, 4000) .* 5.0
-        @test measurement ≈ test_signal
+        reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
+        @test measurement ≈ reference_signal
     end
 
     @testset "Signal continuity" begin
@@ -126,22 +153,22 @@
             cn0 = 45dBHz
         )
         sats = (sat1,)
-        receiver = @inferred Receiver(4e6Hz, noise_std = 5.0)
+        receiver = @inferred Receiver(2.5e6Hz)
 
         rng = MersenneTwister(1234)
         measurement1, next_receiver, next_sats = @inferred get_measurement(
-            4000,
+            2500,
             receiver,
             sats,
             manifold,
             rng
         )
 
-        @test next_receiver == GNSSSimulator.propagate(receiver, 4000, rng)
-        @test next_sats == GNSSSimulator.propagate(sats, 4000, 0.0Hz, 4e6Hz, rng)
+        @test next_receiver == GNSSSimulator.propagate(receiver, 2500, rng)
+        @test next_sats == GNSSSimulator.propagate.(sats, 2500, 0.0Hz, 2.5e6Hz, Ref(rng))
 
         measurement2, next_receiver, next_sats = @inferred get_measurement(
-            4000,
+            2500,
             next_receiver,
             next_sats,
             manifold,
@@ -149,14 +176,19 @@
         )
         measurement = [measurement1; measurement2]
 
-        x = 0:7999
+        carrier = StructArray{Complex{Int16}}(undef, 5000)
+        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        reference_signal = carrier .*
+            get_code.(GPSL1, (0:4999) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            sqrt(10^(45 / 10)) ./ 1 << 7
         rng = MersenneTwister(1234)
-        test_signal =
-            GNSSSignals.cis_vfast.(mod2pi.(π / 2 .+ 2π * 1000Hz / 4e6Hz * x .+ π) .- π) .*
-            get_code.(GPSL1, 100 .+ (1023e3Hz + 1000Hz / 1540) / 4e6Hz * x, 1) .*
-            10^(45 / 20) .+
-            randn(rng, ComplexF64, 8000) .* 5.0
-        @test measurement ≈ test_signal
+        reference_signal += randn(rng, ComplexF64, 5000) .* sqrt(2.5e6)
+
+        @test measurement.im ≈ imag.(reference_signal)
+        # Slightly not contineous because of Float and Fixed point representation?
+        @test measurement.re[1:2500] ≈ real.(reference_signal[1:2500])
+        @test measurement.re[2502:4917] ≈ real.(reference_signal[2502:4917])
+        @test measurement.re[4919:end] ≈ real.(reference_signal[4919:end])
     end
 
     @testset "Multiple antennas" begin
@@ -173,31 +205,29 @@
             cn0 = 45dBHz
         )
         sats = (sat1,)
+        gpmc = @SMatrix randn(ComplexF64, 2, 2)
         receiver = @inferred Receiver(
-            4e6Hz,
-            noise_std = 5.0,
-            gain_phase_mism_crosstalk = SMatrix{2,2,ComplexF64}(I)
+            2.5e6Hz,
+            gain_phase_mism_crosstalk = gpmc
         )
 
         rng = MersenneTwister(1234)
         measurement, next_receiver, next_sats = @inferred get_measurement(
-            4000,
+            2500,
             receiver,
             sats,
             manifold,
             rng
         )
-        x = 0:3999
+        carrier = StructArray{Complex{Int16}}(undef, 2500)
+        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        reference_signal = carrier .*
+            get_code.(GPSL1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            sqrt(10^(45 / 10)) ./ 1 << 7 .* transpose([1.0, 1.0])
         rng = MersenneTwister(1234)
-        test_signal =
-            [1.0; 1.0] .* transpose(
-                GNSSSignals.cis_vfast.(
-                    mod2pi.(π / 2 .+ 2π * 1000Hz / 4e6Hz * x .+ π) .- π
-                ) .*
-                get_code.(GPSL1, 100 .+ (1023e3Hz + 1000Hz / 1540) / 4e6Hz * x, 1) .*
-                10^(45 / 20)
-            ) .+ randn(rng, ComplexF64, 2, 4000) .* 5.0
-        @test measurement ≈ test_signal
+        reference_signal += randn(rng, ComplexF64, 2500, 2) .* sqrt(2.5e6)
+        reference_signal = reference_signal * transpose(gpmc)
+        @test measurement ≈ reference_signal
     end
 
     @testset "Two emitter types" begin
@@ -211,15 +241,23 @@
             code_phase = 100.0,
             cn0 = 45dBHz
         )
-        sats = (sat1,)
-        receiver = @inferred Receiver(4e6Hz, noise_std = 5.0)
+        sat2 = ConstantDopplerSatellite(
+            GPSL5,
+            1,
+            carrier_doppler = 500.0Hz,
+            carrier_phase = π / 2,
+            code_phase = 50.0,
+            cn0 = 45dBHz
+        )
+        sats = (sat1,sat2)
+        receiver = @inferred Receiver(2.5e6Hz)
 
-        jammer = CWJammer(1, 10, doppler = 100.0Hz)
+        jammer = CWJammer(1, 10dB, doppler = 100.0Hz, phase = π / 4)
         jammers = (jammer, )
 
         rng = MersenneTwister(1234)
         measurement, next_receiver, next_sats, next_jammers = @inferred get_measurement(
-            4000,
+            2500,
             receiver,
             sats,
             jammers,
@@ -227,20 +265,24 @@
             rng
         )
 
-        x = 0:3999
+        carrier = StructArray{Complex{Int16}}(undef, 2500)
+        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        reference_signal = carrier .*
+            get_code.(GPSL1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            sqrt(10^(45 / 10)) ./ 1 << 7
+        fpcarrier!(carrier, 500.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        reference_signal += carrier .*
+            get_code.(GPSL5, (0:2499) .* (1023e4 + 500 / 115) ./ 2.5e6 .+ 50, 1) .*
+            sqrt(10^(45 / 10)) ./ 1 << 7
         rng = MersenneTwister(1234)
-        test_signal =
-            GNSSSignals.cis_vfast.(mod2pi.(π / 2 .+ 2π * 1000Hz / 4e6Hz * x .+ π) .- π) .*
-            get_code.(GPSL1, 100 .+ (1023e3Hz + 1000Hz / 1540) / 4e6Hz * x, 1) .*
-            10^(45 / 20) .+ 10 .*
-            GNSSSignals.cis_vfast.(mod2pi.(2π * 100.0Hz / 4e6Hz * x .+ π) .- π) .+
-            randn(rng, ComplexF64, 4000) .* 5.0
+        reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
+        fpcarrier!(carrier, 100.0Hz, 2.5e6Hz, 0.125, bits = Val(7))
+        reference_signal += carrier .* sqrt(10^(10 / 10) * 2.5e6) ./ 1 << 7
+        @test measurement ≈ reference_signal
 
-        @test measurement ≈ test_signal
     end
 
     @testset "Three emitter types" begin
-
         manifold = IdealManifold()
         sat1 = ConstantDopplerSatellite(
             GPSL1,
@@ -250,10 +292,10 @@
             code_phase = 100.0,
             cn0 = 45dBHz
         )
-        sats = (sat1,)
-        receiver = @inferred Receiver(4e6Hz, noise_std = 5.0)
+        sats = (sat1, )
+        receiver = @inferred Receiver(2.5e6Hz)
 
-        jammer = CWJammer(1, 10, doppler = 100.0Hz)
+        jammer = CWJammer(1, 10dB, doppler = 100.0Hz, phase = π / 4)
         jammers = (jammer, )
 
         si = ConstantDopplerStructuralInterference(
@@ -268,29 +310,28 @@
 
         rng = MersenneTwister(1234)
         measurement, next_receiver, next_sats, next_jammers, next_sis = @inferred get_measurement(
-            4000,
+            2500,
             receiver,
             sats,
-            sis,
             jammers,
+            sis,
             manifold,
             rng
         )
 
-        x = 0:3999
+        carrier = StructArray{Complex{Int16}}(undef, 2500)
+        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        reference_signal = carrier .*
+            get_code.(GPSL1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            sqrt(10^(45 / 10)) ./ 1 << 7
+        fpcarrier!(carrier, 1010.0Hz, 2.5e6Hz, 0.3125, bits = Val(7))
+        reference_signal += carrier .*
+            get_code.(GPSL1, (0:2499) .* (1023e3 + 1010 / 1540) ./ 2.5e6 .+ 110, 1) .*
+            sqrt(10^(42 / 10)) ./ 1 << 7
         rng = MersenneTwister(1234)
-        test_signal =
-            GNSSSignals.cis_vfast.(mod2pi.(π / 2 .+ 2π * 1000Hz / 4e6Hz * x .+ π) .- π) .*
-            get_code.(GPSL1, 100 .+ (1023e3Hz + 1000Hz / 1540) / 4e6Hz * x, 1) .*
-            10^(45 / 20) .+
-            GNSSSignals.cis_vfast.(mod2pi.(π / 2 .+ π / 8 .+ 2π * 1010Hz / 4e6Hz * x .+ π) .- π) .*
-            get_code.(GPSL1, 110 .+ (1023e3Hz + 1010Hz / 1540) / 4e6Hz * x, 1) .*
-            10^(42 / 20) .+ 10 .*
-            GNSSSignals.cis_vfast.(mod2pi.(2π * 100.0Hz / 4e6Hz * x .+ π) .- π) .+
-            randn(rng, ComplexF64, 4000) .* 5.0
-
-        @test measurement ≈ test_signal
+        reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
+        fpcarrier!(carrier, 100.0Hz, 2.5e6Hz, 0.125, bits = Val(7))
+        reference_signal += carrier .* sqrt(10^(10 / 10) * 2.5e6) ./ 1 << 7
+        @test measurement ≈ reference_signal
     end
-
-
 end
