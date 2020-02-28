@@ -18,37 +18,24 @@
     @test @inferred(get_carrier_phase(si)) == π / 2 + π / 8
     @test @inferred(get_code_phase(si)) == 110.0
 
-    phase = @inferred GNSSSimulator.calc_phase(si, 0, 100.0Hz, 2e6Hz)
-
-    @test phase.carrier == 0.5 / 2 + 0.5 / 8
-    @test phase.code == 110.0
-
-    phase_wrap = @inferred GNSSSimulator.init_phase_wrap(si)
-    @test phase_wrap == GNSSSimulator.SatellitePhaseWrap(0, 0)
-
-    signal = @inferred GNSSSimulator.get_signal(
+    rng = MersenneTwister(1234)
+    signal = @inferred GNSSSimulator.gen_signal!(
         si,
-        phase,
-        phase_wrap,
-        1.0 + 0.0im,
-        Random.GLOBAL_RNG
+        2.5e6Hz,
+        10.0Hz,
+        1/Hz,
+        2500,
+        rng
     )
-    @test signal ≈ 1.0 * 10^(42 / 20) * GNSSSignals.cis_vfast(π / 2 + π / 8) *
-        get_code(GPSL1, 110.0, 1)
 
-    signal = @inferred GNSSSimulator.get_signal(
-        si,
-        phase,
-        phase_wrap,
-        SVector(1.0im, 2.0im),
-        Random.GLOBAL_RNG
-    )
-    @test signal ≈ SVector(1im, 2im) * 10^(42 / 20) * GNSSSignals.cis_vfast(π / 2 + π / 8) *
-        get_code(GPSL1, 110.0, 1)
-
-    next_phase = @inferred GNSSSimulator.calc_phase(si, 1, 100.0Hz, 2e6Hz)
-    @test next_phase.carrier == 0.5 / 2 + 0.5 / 8 + 1110.0Hz / 2e6Hz
-    @test next_phase.code == 110.0 + (1023e3Hz + 1010.0Hz / 1540) / 2e6Hz
+    code_doppler = 1000.0 * 1023e3 / 1.57542e9
+    reference_signal = get_code.(
+        GPSL1,
+        (0:2499) .* (1023e3 .+ code_doppler) ./ 2.5e6 .+ 100 .+ 10.0,
+        1
+    ) .* cis.(2π .* (0:2499) .* (1000.0 + 10.0 + 10.0) ./ 2.5e6 .+ π / 2 .+ π / 8) .*
+        sqrt(10^(42 / 10))
+    @test sqrt(sum(abs2.(signal .- reference_signal)) / 2500) < 1e-2 * sqrt(10^(42 / 10))
 
     next_si = @inferred GNSSSimulator.propagate(si, 1, 100.0Hz, 2e6Hz, Random.GLOBAL_RNG)
     @test @inferred(get_carrier_doppler(next_si)) == 1010Hz
@@ -56,7 +43,7 @@
     @test @inferred(get_carrier_phase(next_si)) ≈ π / 2 + π / 8 + 2π * 1110Hz / 2e6Hz
     @test @inferred(get_code_phase(next_si)) ≈ 110 + (1023e3Hz + 1010Hz / 1540) / 2e6Hz
     @test @inferred(get_existence(next_si)) == true
-    @test @inferred(get_amplitude(next_si)) ≈ 10^(42 / 20)
+    @test @inferred(get_carrier_to_noise_density_ratio(next_si)) ≈ 42dBHz
     @test @inferred(get_prn(next_si)) == 1
     @test @inferred(get_gnss_system(next_si)) == GPSL1
 end

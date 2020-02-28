@@ -8,7 +8,8 @@ using
     Random,
     Unitful,
     LinearAlgebra,
-    PhasedArray
+    PhasedArray,
+    StructArrays
 
 import Unitful: dB, Hz, kHz, MHz, GHz, dBHz, m, s, rad, ms, μs
 

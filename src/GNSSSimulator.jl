@@ -11,7 +11,8 @@ module GNSSSimulator
         Parameters,
         PhasedArray,
         Random,
-        Unrolled
+        StructArrays,
+        LoopVectorization
 
     import Base.transpose
     import Unitful: Hz, rad, s, m, dB, °, dBHz, upreferred
@@ -45,9 +46,12 @@ export
     get_code_doppler,
     get_code_phase,
     get_gnss_system,
+    get_carrier_to_noise_density_ratio,
+    get_noise_density,
+    get_noise_std,
     get_prn,
     get_id,
-    get_noise_std,
+    get_jammer_to_noise_ratio,
     get_sample_frequency,
     get_intermediate_frequency,
     get_measurement!,

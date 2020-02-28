@@ -1,27 +1,21 @@
-abstract type AbstractSatellite{S <: AbstractGNSSSystem} <: AbstractEmitter end
-
-struct SatellitePhase{T}
-    carrier::T
-    code::T
-end
-
-struct SatellitePhaseWrap
-    carrier::Int
-    code::Int
-end
+abstract type AbstractSatellite{S <: AbstractGNSSSystem, T} <: AbstractEmitter{T} end
 
 struct ConstantDopplerSatellite{
     S <: AbstractGNSSSystem,
+    T <: AbstractFloat,
     D <: Union{SVector{3}, AbstractDOA},
-    E <: Union{Bool, AbstractExistence}
-} <: AbstractSatellite{S}
+    E <: Union{Bool, AbstractExistence},
+    C <: Unitful.Level{Unitful.Decibel, 1Hz, <:Unitful.Quantity{T}}
+} <: AbstractSatellite{S, T}
     prn::Int
     carrier_doppler::typeof(1.0Hz)
     carrier_phase::Float64
     code_phase::Float64
-    amplitude::Float64
+    cn0::C
     exists::E
     doa::D
+    carrier_code::StructArray{Complex{Int16},1,NamedTuple{(:re, :im),Tuple{Array{Int16,1},Array{Int16,1}}},Int}
+    signal::StructArray{Complex{T},1,NamedTuple{(:re, :im),Tuple{Array{T,1},Array{T,1}}},Int}
 end
 
 function ConstantDopplerSatellite(
@@ -30,17 +24,17 @@ function ConstantDopplerSatellite(
     carrier_doppler = NaN*Hz,
     carrier_phase = NaN,
     code_phase = NaN,
-    amplitude = NaN,
-    cn0 = 45dBHz,
+    cn0::C = 45dBHz,
     exists::E = true,
     doa::D = SVector(0,0,1),
     velocity = 14_000.0m / 3.6s,
-    distance_from_earth_center = 26_560_000.0m,
-    n0 = 1/Hz
+    distance_from_earth_center = 26_560_000.0m
 ) where {
     S <: AbstractGNSSSystem,
+    T <: AbstractFloat,
     D <: Union{SVector{3}, AbstractDOA},
-    E <: Union{Bool, AbstractExistence}
+    E <: Union{Bool, AbstractExistence},
+    C <: Unitful.Level{Unitful.Decibel, 1Hz, <:Unitful.Quantity{T}},
 }
     if isnan(carrier_doppler)
         carrier_doppler = calc_doppler(
@@ -68,19 +62,75 @@ function ConstantDopplerSatellite(
             get_code_length(S) * get_secondary_code_length(S)
         )
     end
-    if isnan(amplitude)
-        amplitude = calc_amplitude_from_cn0(cn0, n0)
-    end
-    ConstantDopplerSatellite{S, D, E}(
+    carrier_code = StructArray{Complex{Int16}}(undef, 0)
+    signal = StructArray{Complex{T}}(undef, 0)
+    ConstantDopplerSatellite{S, T, D, E, C}(
         prn,
         carrier_doppler,
         carrier_phase,
         code_phase,
-        amplitude,
+        cn0,
         exists,
-        doa
+        doa,
+        carrier_code,
+        signal
     )
 end
+
+function gen_signal!(
+    sat::ConstantDopplerSatellite{S},
+    sample_frequency,
+    intermediate_frequency,
+    n0,
+    num_samples::Integer,
+    rng
+) where S <: AbstractGNSSSystem
+    resize!(sat.carrier_code, num_samples)
+    resize!(sat.signal, num_samples)
+    carrier = fpcarrier!(
+        sat.carrier_code,
+        intermediate_frequency + get_carrier_doppler(sat),
+        sample_frequency,
+        get_carrier_phase_2pi(sat),
+        bits = Val(7)
+    )
+    carrier_code = multiply_with_code!(
+        carrier,
+        S,
+        get_code_frequency(S) + get_code_doppler(sat),
+        sample_frequency,
+        get_code_phase(sat),
+        get_prn(sat)
+    )
+    sat.signal .= carrier_code .* get_amplitude(sat, n0) ./ Int16(1) << 7
+end
+
+function multiply_with_code!(
+    carrier_code,
+    ::Type{S},
+    code_frequency,
+    sample_frequency,
+    start_code_phase,
+    prn::Integer
+) where S <: AbstractGNSSSystem
+    fp = 64 - min_bits_for_code_length(S) - 1
+    fp_delta = floor(Int, code_frequency * 1 << fp / sample_frequency)
+    fp_start_code_phase = floor(Int, start_code_phase * 1 << fp)
+    fp_total_code_length = floor(
+        Int,
+        get_code_length(S) * get_secondary_code_length(S) * 1 << fp
+    )
+    fp_code_phase = fp_start_code_phase - fp_delta
+    @inbounds for i = 1:length(carrier_code)
+        fp_code_phase += fp_delta
+        fp_code_phase -= (fp_code_phase >= fp_total_code_length) * fp_total_code_length
+        code_index = fp_code_phase >> fp
+        code = get_code_unsafe(S, code_index, prn)
+        carrier_code[i] *= code
+    end
+    carrier_code
+end
+
 
 """
 $(SIGNATURES)
@@ -88,12 +138,12 @@ $(SIGNATURES)
 Propagates the satellite state over time
 """
 function propagate(
-    sat::ConstantDopplerSatellite{S, D, E},
+    sat::ConstantDopplerSatellite{S, T, D, E, C},
     num_samples,
     intermediate_frequency,
     sample_frequency,
     rng
-) where {S, D, E}
+) where {S, T, D, E, C}
     carrier_phase = (intermediate_frequency + get_carrier_doppler(sat)) * num_samples /
         sample_frequency + get_carrier_phase_2pi(sat)
     modded_carrier_phase = mod(carrier_phase + 0.5, 1) - 0.5
@@ -101,67 +151,22 @@ function propagate(
         sample_frequency + get_code_phase(sat)
     modded_code_phase = mod(code_phase, get_code_length(S) * get_secondary_code_length(S))
     Δt = num_samples / sample_frequency
-    amplitude = propagate(sat.amplitude, Δt, rng)
     exists = propagate(sat.exists, Δt, rng)
     doa = propagate(sat.doa, Δt, rng)
-    ConstantDopplerSatellite{S, D, E}(
+    ConstantDopplerSatellite{S, T, D, E, C}(
         sat.prn,
         sat.carrier_doppler,
         modded_carrier_phase,
         modded_code_phase,
-        amplitude,
+        get_carrier_to_noise_density_ratio(sat),
         exists,
-        doa
+        doa,
+        sat.carrier_code,
+        sat.signal
     )
 end
 
-function calc_phase(
-    sat::ConstantDopplerSatellite{S},
-    index,
-    intermediate_frequency,
-    sample_frequency
-) where {S <: AbstractGNSSSystem}
-    carrier_phase = (intermediate_frequency + get_carrier_doppler(sat)) * index /
-        sample_frequency + get_carrier_phase_2pi(sat)
-    code_phase = (get_code_frequency(S) + get_code_doppler(sat)) * index /
-        sample_frequency + get_code_phase(sat)
-    SatellitePhase(carrier_phase, code_phase)
-end
-
-function init_phase_wrap(sat::ConstantDopplerSatellite)
-    SatellitePhaseWrap(0, 0)
-end
-
-function update_phase_wrap(
-    phase_wrap::SatellitePhaseWrap,
-    phase::SatellitePhase,
-    sat::ConstantDopplerSatellite{S},
-) where {S <: AbstractGNSSSystem}
-    code_length = get_code_length(S) * get_secondary_code_length(S)
-    code_wrap = phase_wrap.code + ((phase.code - phase_wrap.code) >= code_length) *
-        code_length
-    carrier_wrap = phase_wrap.carrier + ((phase.carrier - phase_wrap.carrier) >= 0.5) * 1
-    SatellitePhaseWrap(carrier_wrap, code_wrap)
-end
-
-Base.@propagate_inbounds function get_signal(
-    sat::ConstantDopplerSatellite{S},
-    phase::SatellitePhase,
-    phase_wrap::SatellitePhaseWrap,
-    steer_vec::V,
-    rng
-) where {
-    S <: AbstractGNSSSystem,
-    T <: Union{Float32, Float64},
-    V <: Union{SVector{N, Complex{T}}, Complex{T}, T} where N
-}
-    temp = get_existence(sat) *
-        T(get_amplitude(sat)) *
-        get_code_unsafe(S, phase.code - phase_wrap.code, sat.prn) *
-        GNSSSignals.cis_vfast(T(2π * (phase.carrier - phase_wrap.carrier)))
-    temp * steer_vec
-end
-
+@inline get_amplitude(sat::AbstractSatellite, n0) = calc_amplitude_from_cn0(sat.cn0, n0)
 @inline get_carrier_doppler(sat::AbstractSatellite) = sat.carrier_doppler
 @inline get_code_doppler(sat::AbstractSatellite{S}) where S <: AbstractGNSSSystem =
     sat.carrier_doppler * get_code_center_frequency_ratio(S)
@@ -170,6 +175,7 @@ end
 @inline get_code_phase(sat::AbstractSatellite) = sat.code_phase
 @inline get_prn(sat::AbstractSatellite) = sat.prn
 @inline get_gnss_system(sat::AbstractSatellite{S}) where S <: AbstractGNSSSystem = S
+@inline get_carrier_to_noise_density_ratio(sat::AbstractSatellite) = sat.cn0
 
 """
 $(SIGNATURES)
