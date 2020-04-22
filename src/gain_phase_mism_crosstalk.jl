@@ -31,11 +31,11 @@ function propagate(gpmc::AsymptoticGainPhaseMismCrosstalk, Δt, rng)
     AsymptoticGainPhaseMismCrosstalk(gpmc.a, gpmc.b, gpmc.e, gpmc.C, t)
 end
 
-function get_gain_phase_mism_crosstalk(gpmc::AsymptoticGainPhaseMismCrosstalk)
+function get_gain_phase_mism_crosstalk(gpmc::AsymptoticGainPhaseMismCrosstalk{N,T}) where {N,T}
     phase_misms = cis.(
         (gpmc.a * (gpmc.t / s) ^ gpmc.e + gpmc.b) ./ ((gpmc.t / s) ^ gpmc.e + 1)
     )
-    phase_misms .* gpmc.C
+    SMatrix{N,N,Complex{T}}(phase_misms .* gpmc.C)
 end
 
 @inline function propagate(gain_phase_mism_crosstalk, Δt, rng)

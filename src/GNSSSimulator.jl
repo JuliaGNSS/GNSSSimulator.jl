@@ -11,8 +11,7 @@ module GNSSSimulator
         Parameters,
         PhasedArray,
         Random,
-        StructArrays,
-        LoopVectorization
+        StructArrays
 
     import Base.transpose
     import Unitful: Hz, rad, s, m, dB, °, dBHz, upreferred
