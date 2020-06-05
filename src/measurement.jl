@@ -264,7 +264,7 @@ end
 function get_steer_vecs(::Type{T}, emitters, receiver, manifold) where T <: Union{Float32, Float64}
     map(emitters) do emitter
         convert_complex_or_real.(T,
-            get_steer_vec(manifold, get_doa(emitter), get_attitude(receiver))
+            get_steer_vec(manifold, emitter, get_attitude(receiver))
         )
     end
 end

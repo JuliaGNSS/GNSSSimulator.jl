@@ -15,6 +15,7 @@ module GNSSSimulator
 
     import Base.transpose
     import Unitful: Hz, rad, s, m, dB, °, dBHz, upreferred
+    import PhasedArray.get_steer_vec
 
     const EARTH_RADIUS = 6_360_000m
     const SPEED_OF_LIGHT = 299_792_458m/s
@@ -30,6 +31,7 @@ export
     DynamicExistence,
     ConstantDopplerSatellite,
     ConstantDopplerStructuralInterference,
+    SyntheticSatellite,
     AsymptoticGainPhaseMismCrosstalk,
     CWJammer,
     NoiseJammer,
@@ -71,6 +73,7 @@ export
     include("emitter.jl")
     include("satellite.jl")
     include("structural_interference.jl")
+    include("synthetic_satellite.jl")
     include("jammer.jl")
     include("gain_phase_mism_crosstalk.jl")
     include("receiver.jl")
