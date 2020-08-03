@@ -19,7 +19,7 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 [compat]
 CoordinateTransformations = "0.5"
 DocStringExtensions = "0.6, 0.7, 0.8"
-GNSSSignals = "0.12.1"
+GNSSSignals = "0.13"
 Parameters = "0.11, 0.12"
 PhasedArray = "0.6"
 Rotations = "0.10, 0.11, 0.12"
