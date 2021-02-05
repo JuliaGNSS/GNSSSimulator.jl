@@ -2,7 +2,7 @@ abstract type AbstractSyntheticSatellite{T} <: AbstractEmitter{T} end
 
 struct SyntheticSatellite{
     T <: AbstractFloat,
-    CS <: ConstantDopplerSatellite{<: AbstractGNSSSystem, T}
+    CS <: ConstantDopplerSatellite{<: AbstractGNSS, T}
 } <: AbstractSyntheticSatellite{T}
     sat::CS
 end

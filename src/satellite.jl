@@ -1,12 +1,13 @@
-abstract type AbstractSatellite{S <: AbstractGNSSSystem, T} <: AbstractEmitter{T} end
+abstract type AbstractSatellite{S <: AbstractGNSS, T} <: AbstractEmitter{T} end
 
 struct ConstantDopplerSatellite{
-    S <: AbstractGNSSSystem,
+    S <: AbstractGNSS,
     T <: AbstractFloat,
     D <: Union{SVector{3}, AbstractDOA},
     E <: Union{Bool, AbstractExistence},
     C <: Unitful.Level{Unitful.Decibel, 1Hz, <:Unitful.Quantity{T}}
 } <: AbstractSatellite{S, T}
+    system::S
     prn::Int
     carrier_doppler::typeof(1.0Hz)
     carrier_phase::Float64
@@ -19,7 +20,7 @@ struct ConstantDopplerSatellite{
 end
 
 function ConstantDopplerSatellite(
-    ::Type{S},
+    system::S,
     prn::Int;
     carrier_doppler = NaN*Hz,
     carrier_phase = NaN,
@@ -30,7 +31,7 @@ function ConstantDopplerSatellite(
     velocity = 14_000.0m / 3.6s,
     distance_from_earth_center = 26_560_000.0m
 ) where {
-    S <: AbstractGNSSSystem,
+    S <: AbstractGNSS,
     T <: AbstractFloat,
     D <: Union{SVector{3}, AbstractDOA},
     E <: Union{Bool, AbstractExistence},
@@ -41,30 +42,31 @@ function ConstantDopplerSatellite(
             distance_from_earth_center,
             doa,
             velocity,
-            get_center_frequency(S)
+            get_center_frequency(system)
         )
     end
     if isnan(carrier_phase)
         sat_user_distance = calc_sat_user_distance(distance_from_earth_center, doa)
         carrier_phase = calc_carrier_phase(
             sat_user_distance,
-            get_center_frequency(S) + carrier_doppler
+            get_center_frequency(system) + carrier_doppler
         )
     else
         carrier_phase = carrier_phase / 2π
     end
     if isnan(code_phase)
         sat_user_distance = calc_sat_user_distance(distance_from_earth_center, doa)
-        code_doppler = carrier_doppler * get_code_center_frequency_ratio(S)
+        code_doppler = carrier_doppler * get_code_center_frequency_ratio(system)
         code_phase = calc_code_phase(
             sat_user_distance,
-            get_code_frequency(S) + code_doppler,
-            get_code_length(S) * get_secondary_code_length(S)
+            get_code_frequency(system) + code_doppler,
+            get_code_length(system) * get_secondary_code_length(system)
         )
     end
     carrier_code = StructArray{Complex{Int16}}(undef, 0)
     signal = StructArray{Complex{T}}(undef, 0)
-    ConstantDopplerSatellite{S, T, D, E, C}(
+    ConstantDopplerSatellite(
+        system,
         prn,
         carrier_doppler,
         carrier_phase,
@@ -84,7 +86,7 @@ function gen_signal!(
     n0,
     num_samples::Integer,
     rng
-) where S <: AbstractGNSSSystem
+) where S <: AbstractGNSS
     resize!(sat.carrier_code, num_samples)
     resize!(sat.signal, num_samples)
     carrier = fpcarrier!(
@@ -94,10 +96,11 @@ function gen_signal!(
         get_carrier_phase_2pi(sat),
         bits = Val(7)
     )
+    system = sat.system
     carrier_code = multiply_with_code!(
         carrier,
-        S,
-        get_code_frequency(S) + get_code_doppler(sat),
+        system,
+        get_code_frequency(system) + get_code_doppler(sat),
         sample_frequency,
         get_code_phase(sat),
         get_prn(sat)
@@ -107,25 +110,25 @@ end
 
 function multiply_with_code!(
     carrier_code,
-    ::Type{S},
+    system::AbstractGNSS,
     code_frequency,
     sample_frequency,
     start_code_phase,
     prn::Integer
-) where S <: AbstractGNSSSystem
-    fp = 64 - min_bits_for_code_length(S) - 1
+)
+    fp = 64 - min_bits_for_code_length(system) - 1
     fp_delta = floor(Int, code_frequency * 1 << fp / sample_frequency)
     fp_start_code_phase = floor(Int, start_code_phase * 1 << fp)
     fp_total_code_length = floor(
         Int,
-        get_code_length(S) * get_secondary_code_length(S) * 1 << fp
+        get_code_length(system) * get_secondary_code_length(system) * 1 << fp
     )
     fp_code_phase = fp_start_code_phase - fp_delta
     @inbounds for i = 1:length(carrier_code)
         fp_code_phase += fp_delta
         fp_code_phase -= (fp_code_phase >= fp_total_code_length) * fp_total_code_length
         code_index = fp_code_phase >> fp
-        code = get_code_unsafe(S, code_index, prn)
+        code = get_code_unsafe(system, code_index, prn)
         carrier_code[i] *= code
     end
     carrier_code
@@ -144,16 +147,18 @@ function propagate(
     sample_frequency,
     rng
 ) where {S, T, D, E, C}
+    system = sat.system
     carrier_phase = (intermediate_frequency + get_carrier_doppler(sat)) * num_samples /
         sample_frequency + get_carrier_phase_2pi(sat)
     modded_carrier_phase = mod(carrier_phase + 0.5, 1) - 0.5
-    code_phase = (get_code_frequency(S) + get_code_doppler(sat)) * num_samples /
+    code_phase = (get_code_frequency(system) + get_code_doppler(sat)) * num_samples /
         sample_frequency + get_code_phase(sat)
-    modded_code_phase = mod(code_phase, get_code_length(S) * get_secondary_code_length(S))
+    modded_code_phase = mod(code_phase, get_code_length(system) * get_secondary_code_length(system))
     Δt = num_samples / sample_frequency
     exists = propagate(sat.exists, Δt, rng)
     doa = propagate(sat.doa, Δt, rng)
     ConstantDopplerSatellite{S, T, D, E, C}(
+        system,
         sat.prn,
         sat.carrier_doppler,
         modded_carrier_phase,
@@ -168,13 +173,13 @@ end
 
 @inline get_amplitude(sat::AbstractSatellite, n0) = calc_amplitude_from_cn0(sat.cn0, n0)
 @inline get_carrier_doppler(sat::AbstractSatellite) = sat.carrier_doppler
-@inline get_code_doppler(sat::AbstractSatellite{S}) where S <: AbstractGNSSSystem =
-    sat.carrier_doppler * get_code_center_frequency_ratio(S)
+@inline get_code_doppler(sat::AbstractSatellite) =
+    sat.carrier_doppler * get_code_center_frequency_ratio(sat.system)
 @inline get_carrier_phase(sat::AbstractSatellite) = 2π * sat.carrier_phase
 @inline get_carrier_phase_2pi(sat::AbstractSatellite) = sat.carrier_phase
 @inline get_code_phase(sat::AbstractSatellite) = sat.code_phase
 @inline get_prn(sat::AbstractSatellite) = sat.prn
-@inline get_gnss_system(sat::AbstractSatellite{S}) where S <: AbstractGNSSSystem = S
+@inline get_gnss_system(sat::AbstractSatellite) = sat.system
 @inline get_carrier_to_noise_density_ratio(sat::AbstractSatellite) = sat.cn0
 
 """

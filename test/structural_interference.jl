@@ -1,6 +1,8 @@
 @testset "Structural interference" begin
+    system = GPSL1()
+
     sat = ConstantDopplerSatellite(
-        GPSL1,
+        system,
         1,
         carrier_doppler = 1000.0Hz,
         carrier_phase = π / 2,
@@ -30,7 +32,7 @@
 
     code_doppler = 1000.0 * 1023e3 / 1.57542e9
     reference_signal = get_code.(
-        GPSL1,
+        system,
         (0:2499) .* (1023e3 .+ code_doppler) ./ 2.5e6 .+ 100 .+ 10.0,
         1
     ) .* cis.(2π .* (0:2499) .* (1000.0 + 10.0 + 10.0) ./ 2.5e6 .+ π / 2 .+ π / 8) .*
@@ -45,5 +47,5 @@
     @test @inferred(get_existence(next_si)) == true
     @test @inferred(get_carrier_to_noise_density_ratio(next_si)) ≈ 42dBHz
     @test @inferred(get_prn(next_si)) == 1
-    @test @inferred(get_gnss_system(next_si)) == GPSL1
+    @test @inferred(get_gnss_system(next_si)) == system
 end

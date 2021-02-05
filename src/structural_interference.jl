@@ -2,7 +2,7 @@ abstract type AbstractStructuralInterference{T} <: AbstractEmitter{T} end
 
 struct ConstantDopplerStructuralInterference{
     T <: AbstractFloat,
-    CS <: ConstantDopplerSatellite{<: AbstractGNSSSystem, T}
+    CS <: ConstantDopplerSatellite{<: AbstractGNSS, T}
 } <: AbstractStructuralInterference{T}
     sat::CS
 end
@@ -18,13 +18,14 @@ function ConstantDopplerStructuralInterference(
     added_relative_velocity = 0.0m/s,
     added_signal_path = 0.0m
 ) where {
-    S <: AbstractGNSSSystem,
+    S <: AbstractGNSS,
     D <: Union{SVector{3}, AbstractDOA},
     E <: Union{Bool, AbstractExistence}
 }
+    system = sat.system
     if isnan(added_carrier_doppler)
         carrier_doppler = get_carrier_doppler(sat) + added_relative_velocity /
-            SPEED_OF_LIGHT * get_center_frequency(S)
+            SPEED_OF_LIGHT * get_center_frequency(system)
     else
         carrier_doppler = get_carrier_doppler(sat) + added_carrier_doppler
     end
@@ -32,7 +33,7 @@ function ConstantDopplerStructuralInterference(
         carrier_phase = mod(get_carrier_phase_2pi(sat) +
             calc_carrier_phase(
                 added_signal_path,
-                get_center_frequency(S) + carrier_doppler
+                get_center_frequency(system) + carrier_doppler
             ) + 0.5,
             1
         ) - 0.5
@@ -41,22 +42,23 @@ function ConstantDopplerStructuralInterference(
         carrier_phase = mod(get_carrier_phase_2pi(sat) + added_carrier_phase + 0.5, 1) - 0.5
     end
     if isnan(added_code_phase)
-        code_doppler = carrier_doppler * get_code_center_frequency_ratio(S)
+        code_doppler = carrier_doppler * get_code_center_frequency_ratio(system)
         code_phase = mod(
             get_code_phase(sat) +
             calc_code_phase(
                 added_signal_path,
-                get_code_frequency(S) + code_doppler, get_code_length(S)
+                get_code_frequency(system) + code_doppler, get_code_length(system)
             ),
-            get_code_length(S)
+            get_code_length(system)
         )
     else
-        code_phase = mod(get_code_phase(sat) + added_code_phase, get_code_length(S))
+        code_phase = mod(get_code_phase(sat) + added_code_phase, get_code_length(system))
     end
     cn0 = get_carrier_to_noise_density_ratio(sat) + signal_amplification
     carrier_code = StructArray{Complex{Int16}}(undef, 0)
     signal = StructArray{Complex{eltype(float(cn0.val.val))}}(undef, 0)
     sat = ConstantDopplerSatellite{S, eltype(float(cn0.val.val)), D, E, eltype(float(cn0))}(
+        system,
         get_prn(sat),
         carrier_doppler,
         carrier_phase,
