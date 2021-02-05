@@ -2,9 +2,10 @@
 
     @testset "Multiple Emitters" begin
         manifold = IdealManifold()
+        system = GPSL1()
 
         sat1 = ConstantDopplerSatellite(
-            GPSL1,
+            system,
             1,
             carrier_doppler = 1000.0Hz,
             carrier_phase = π / 2,
@@ -12,7 +13,7 @@
             cn0 = 45dBHz
         )
         sat2 = ConstantDopplerSatellite(
-            GPSL1,
+            system,
             2,
             carrier_doppler = 500.0Hz,
             carrier_phase = π / 2,
@@ -35,11 +36,11 @@
         carrier = StructArray{Complex{Int16}}(undef, 2500)
         fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
         reference_signal = carrier .*
-            get_code.(GPSL1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            get_code.(system, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
             sqrt(10^(45 / 10)) ./ 1 << 7
         fpcarrier!(carrier, 500.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
         reference_signal += carrier .*
-            get_code.(GPSL1, (0:2499) .* (1023e3 + 500 / 1540) ./ 2.5e6 .+ 50, 2) .*
+            get_code.(system, (0:2499) .* (1023e3 + 500 / 1540) ./ 2.5e6 .+ 50, 2) .*
             sqrt(10^(45 / 10)) ./ 1 << 7
         rng = MersenneTwister(1234)
         reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
@@ -59,7 +60,7 @@
         @test measurement ≈ reference_signal
 
         sat1f32 = ConstantDopplerSatellite(
-            GPSL1,
+            system,
             1,
             carrier_doppler = 1000.0Hz,
             carrier_phase = π / 2,
@@ -67,7 +68,7 @@
             cn0 = Float32(45)dBHz
         )
         sat2f32 = ConstantDopplerSatellite(
-            GPSL1,
+            system,
             2,
             carrier_doppler = 500.0Hz,
             carrier_phase = π / 2,
@@ -101,9 +102,10 @@
 
     @testset "Non existing Emitter" begin
         manifold = IdealManifold()
+        system = GPSL1()
 
         sat1 = ConstantDopplerSatellite(
-            GPSL1,
+            system,
             1,
             carrier_doppler = 1000.0Hz,
             carrier_phase = π / 2,
@@ -111,7 +113,7 @@
             cn0 = 45dBHz
         )
         sat2 = ConstantDopplerSatellite(
-            GPSL1,
+            system,
             2,
             carrier_doppler = 500.0Hz,
             carrier_phase = π / 2,
@@ -135,7 +137,7 @@
         carrier = StructArray{Complex{Int16}}(undef, 2500)
         fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
         reference_signal = carrier .*
-            get_code.(GPSL1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            get_code.(system, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
             sqrt(10^(45 / 10)) ./ 1 << 7
         rng = MersenneTwister(1234)
         reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
@@ -144,8 +146,10 @@
 
     @testset "Signal continuity" begin
         manifold = IdealManifold()
+        system = GPSL1()
+
         sat1 = ConstantDopplerSatellite(
-            GPSL1,
+            system,
             1,
             carrier_doppler = 1000.0Hz,
             carrier_phase = π / 2,
@@ -179,7 +183,7 @@
         carrier = StructArray{Complex{Int16}}(undef, 5000)
         fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
         reference_signal = carrier .*
-            get_code.(GPSL1, (0:4999) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            get_code.(system, (0:4999) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
             sqrt(10^(45 / 10)) ./ 1 << 7
         rng = MersenneTwister(1234)
         reference_signal += randn(rng, ComplexF64, 5000) .* sqrt(2.5e6)
@@ -196,8 +200,10 @@
             0.1904 / 4 * SVector(SVector(1, 1, 0), SVector(-1, 1, 0)),
             1575420e3
         )
+        system = GPSL1()
+
         sat1 = ConstantDopplerSatellite(
-            GPSL1,
+            system,
             1,
             carrier_doppler = 1000.0Hz,
             carrier_phase = π / 2,
@@ -222,7 +228,7 @@
         carrier = StructArray{Complex{Int16}}(undef, 2500)
         fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
         reference_signal = carrier .*
-            get_code.(GPSL1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            get_code.(system, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
             sqrt(10^(45 / 10)) ./ 1 << 7 .* transpose([1.0, 1.0])
         rng = MersenneTwister(1234)
         reference_signal += randn(rng, ComplexF64, 2500, 2) .* sqrt(2.5e6)
@@ -231,10 +237,12 @@
     end
 
     @testset "Two emitter types" begin
-
         manifold = IdealManifold()
+        gpsl1 = GPSL1()
+        gpsl5 = GPSL5()
+
         sat1 = ConstantDopplerSatellite(
-            GPSL1,
+            gpsl1,
             1,
             carrier_doppler = 1000.0Hz,
             carrier_phase = π / 2,
@@ -242,7 +250,7 @@
             cn0 = 45dBHz
         )
         sat2 = ConstantDopplerSatellite(
-            GPSL5,
+            gpsl5,
             1,
             carrier_doppler = 500.0Hz,
             carrier_phase = π / 2,
@@ -268,11 +276,11 @@
         carrier = StructArray{Complex{Int16}}(undef, 2500)
         fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
         reference_signal = carrier .*
-            get_code.(GPSL1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            get_code.(gpsl1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
             sqrt(10^(45 / 10)) ./ 1 << 7
         fpcarrier!(carrier, 500.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
         reference_signal += carrier .*
-            get_code.(GPSL5, (0:2499) .* (1023e4 + 500 / 115) ./ 2.5e6 .+ 50, 1) .*
+            get_code.(gpsl5, (0:2499) .* (1023e4 + 500 / 115) ./ 2.5e6 .+ 50, 1) .*
             sqrt(10^(45 / 10)) ./ 1 << 7
         rng = MersenneTwister(1234)
         reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
@@ -284,8 +292,10 @@
 
     @testset "Three emitter types" begin
         manifold = IdealManifold()
+        system = GPSL1()
+
         sat1 = ConstantDopplerSatellite(
-            GPSL1,
+            system,
             1,
             carrier_doppler = 1000.0Hz,
             carrier_phase = π / 2,
@@ -322,11 +332,11 @@
         carrier = StructArray{Complex{Int16}}(undef, 2500)
         fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
         reference_signal = carrier .*
-            get_code.(GPSL1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            get_code.(system, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
             sqrt(10^(45 / 10)) ./ 1 << 7
         fpcarrier!(carrier, 1010.0Hz, 2.5e6Hz, 0.3125, bits = Val(7))
         reference_signal += carrier .*
-            get_code.(GPSL1, (0:2499) .* (1023e3 + 1010 / 1540) ./ 2.5e6 .+ 110, 1) .*
+            get_code.(system, (0:2499) .* (1023e3 + 1010 / 1540) ./ 2.5e6 .+ 110, 1) .*
             sqrt(10^(42 / 10)) ./ 1 << 7
         rng = MersenneTwister(1234)
         reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)

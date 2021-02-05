@@ -28,7 +28,7 @@ pkg> add git@git.rwth-aachen.de:nav/GNSSSimulator.jl.git
 using GNSSSimulator
 using GNSSSimulator: GPSL1, Hz
 sample_freq = 2e6Hz
-sat = ConstantDopplerSatellite(GPSL1, 1)
+sat = ConstantDopplerSatellite(GPSL1(), 1)
 emitters = (sat,)
 receiver = Receiver(sample_freq)
 measurement1, next_receiver1, next_emitters1 = get_measurement(2000, receiver, emitters)
