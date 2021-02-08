@@ -11,7 +11,8 @@ module GNSSSimulator
         Parameters,
         PhasedArray,
         Random,
-        StructArrays
+        StructArrays,
+        LoopVectorization
 
     import Base.transpose
     import Unitful: Hz, rad, s, m, dB, °, dBHz, upreferred
@@ -53,7 +54,7 @@ export
     get_prn,
     get_id,
     get_jammer_to_noise_ratio,
-    get_sample_frequency,
+    get_sampling_frequency,
     get_intermediate_frequency,
     get_measurement!,
     get_measurement
@@ -67,6 +68,22 @@ export
         index < size(values, 1) ? values[index] : values[end]
     end
 
+    function gen_carrier!(
+        carrier::StructArray{<:Complex{T}},
+        frequency,
+        sampling_frequency,
+        start_phase,
+        amplitude::T
+    ) where T
+        c_re = carrier.re; c_im = carrier.im
+        @avx for i in 1:length(carrier)
+            c_im_temp, c_re_temp =
+                sincos(T(2π) * ((i - 1) * T(upreferred(frequency / sampling_frequency)) + T(start_phase)))
+            c_im[i] = c_im_temp * amplitude
+            c_re[i] = c_re_temp * amplitude
+        end
+        carrier
+    end
     include("attitude.jl")
     include("doa.jl")
     include("existence.jl")

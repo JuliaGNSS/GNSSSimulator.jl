@@ -1,12 +1,11 @@
-abstract type AbstractReceiver{T} end
+abstract type AbstractReceiver end
 
 struct Receiver{
-        T <: AbstractFloat,
-        G <: Union{T, SMatrix{N, N, Complex{T}}, AbstractGainPhaseMismCrosstalk{T}} where N,
+        G <: Union{TG, SMatrix{N, N, Complex{TG}}, AbstractGainPhaseMismCrosstalk{TG}} where {N, TG <: AbstractFloat},
         A <: Union{RotXYZ{<:Real}, AbstractAttitude},
-        C <: Unitful.Quantity{T, Unitful.𝐓}
-    } <: AbstractReceiver{T}
-    sample_frequency::typeof(1.0Hz)
+        C <: Unitful.Quantity{<:Real, Unitful.𝐓}
+    } <: AbstractReceiver
+    sampling_frequency::typeof(1.0Hz)
     intermediate_frequency::typeof(1.0Hz)
     gain_phase_mism_crosstalk::G
     attitude::A
@@ -14,31 +13,32 @@ struct Receiver{
 end
 
 function Receiver(
-    sample_frequency;
+    sampling_frequency;
     intermediate_frequency = 0.0Hz,
     gain_phase_mism_crosstalk::G = 1.0,
-    attitude = RotXYZ(0,0,0),
-    n0::Unitful.Quantity{<:Real, Unitful.𝐓} = 1/Hz,
+    attitude::A = RotXYZ(0, 0, 0),
+    n0::C = 1/Hz,
 ) where {
     N,
-    T <: AbstractFloat,
-    G <: Union{T, SMatrix{N, N, Complex{T}}, AbstractGainPhaseMismCrosstalk{T}}
+    G <: Union{TG, SMatrix{N, N, Complex{TG}}, AbstractGainPhaseMismCrosstalk{TG}} where TG <: AbstractFloat,
+    A <: Union{RotXYZ{<:Real}, AbstractAttitude},
+    C <: Unitful.Quantity{<:Real, Unitful.𝐓}
 }
-    Receiver(
-        sample_frequency,
+    Receiver{G, A, C}(
+        sampling_frequency,
         intermediate_frequency,
         gain_phase_mism_crosstalk,
         attitude,
-        T(n0.val)/Hz
+        n0
     )
 end
 
 function propagate(receiver::Receiver, num_samples, rng)
-    Δt = num_samples / get_sample_frequency(receiver)
+    Δt = num_samples / get_sampling_frequency(receiver)
     gain_phase_mism_crosstalk = propagate(receiver.gain_phase_mism_crosstalk, Δt, rng)
     attitude = propagate(receiver.attitude, Δt, rng)
     Receiver(
-        receiver.sample_frequency,
+        receiver.sampling_frequency,
         receiver.intermediate_frequency,
         gain_phase_mism_crosstalk,
         attitude,
@@ -54,8 +54,8 @@ function get_attitude(receiver::Receiver)
     get_attitude(receiver.attitude)
 end
 
-@inline function get_sample_frequency(receiver::Receiver)
-    receiver.sample_frequency
+@inline function get_sampling_frequency(receiver::Receiver)
+    receiver.sampling_frequency
 end
 
 @inline function get_intermediate_frequency(receiver::Receiver)
@@ -63,6 +63,6 @@ end
 end
 
 @inline get_noise_density(receiver::AbstractReceiver) = receiver.n0
-@inline function get_noise_std(receiver::AbstractReceiver{T}) where T <: AbstractFloat
-    T(sqrt(get_noise_density(receiver) * get_sample_frequency(receiver)))
+@inline function get_noise_std(receiver::AbstractReceiver)
+    sqrt(get_noise_density(receiver) * get_sampling_frequency(receiver))
 end

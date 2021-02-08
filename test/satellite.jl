@@ -34,10 +34,10 @@
         @test @inferred(GNSSSimulator.get_carrier_phase(sat)) == π / 2
         @test @inferred(GNSSSimulator.get_code_phase(sat)) == 100
 
-        carrier_code = StructArray{Complex{Int16}}((ones(Int16, 2500), ones(Int16, 2500)))
+        code = Vector{Int8}(undef, 2500)
 
-        carrier_code = @inferred GNSSSimulator.multiply_with_code!(
-            carrier_code,
+        code = @inferred GNSSSimulator.gen_code!(
+            code,
             system,
             1023e3Hz + 1Hz,
             2.5e6Hz,
@@ -45,12 +45,7 @@
             1
         )
 
-        @test carrier_code.re == get_code.(
-            system,
-            (0:2499) .* (1023e3 .+ 1) ./ 2.5e6 .+ 120,
-            1
-        )
-        @test carrier_code.im == get_code.(
+        @test code == get_code.(
             system,
             (0:2499) .* (1023e3 .+ 1) ./ 2.5e6 .+ 120,
             1

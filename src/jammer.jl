@@ -4,7 +4,7 @@ struct CWJammer{
     T <: AbstractFloat,
     D <: Union{SVector{3}, AbstractDOA},
     E <: Union{Bool, AbstractExistence},
-    C <: Unitful.Gain{Unitful.Decibel, :?, T}
+    C <: Unitful.Gain
 } <: AbstractJammer{T}
     id::Int
     doppler::typeof(1.0Hz)
@@ -12,7 +12,6 @@ struct CWJammer{
     jnr::C
     exists::E
     doa::D
-    carrier::StructArray{Complex{Int16},1,NamedTuple{(:re, :im),Tuple{Array{Int16,1},Array{Int16,1}}},Int}
     signal::StructArray{Complex{T},1,NamedTuple{(:re, :im),Tuple{Array{T,1},Array{T,1}}},Int}
 end
 
@@ -20,7 +19,7 @@ struct NoiseJammer{
     T <: AbstractFloat,
     D <: Union{SVector{3}, AbstractDOA},
     E <: Union{Bool, AbstractExistence},
-    C <: Unitful.Gain{Unitful.Decibel, :?, T}
+    C <: Unitful.Gain
 } <: AbstractJammer{T}
     id::Int
     jnr::C
@@ -30,6 +29,7 @@ struct NoiseJammer{
 end
 
 function CWJammer(
+    ::Type{T},
     id::Integer,
     jnr::Unitful.Gain{Unitful.Decibel, :?, <:Real};
     doppler = 0.0Hz,
@@ -37,61 +37,93 @@ function CWJammer(
     exists::E = true,
     doa::D = SVector(0, 0, 1)
 ) where {
+    T <: AbstractFloat,
     D <: Union{SVector{3}, AbstractDOA},
     E <: Union{Bool, AbstractExistence},
 }
     phase = phase / 2π
-    carrier = StructArray{Complex{Int16}}(undef, 0)
-    signal = StructArray{Complex{eltype(float(jnr.val))}}(undef, 0)
-    CWJammer{eltype(float(jnr.val)), D, E, eltype(float(jnr))}(
+    signal = StructArray{Complex{T}}(undef, 0)
+    CWJammer{T, D, E, eltype(float(jnr))}(
         id,
         float(doppler),
         float(phase),
         float(jnr),
         exists,
         doa,
-        carrier,
         signal
+    )
+end
+
+function CWJammer(
+    id::Integer,
+    jnr::Unitful.Gain{Unitful.Decibel, :?, <:Real};
+    doppler = 0.0Hz,
+    phase = 0.0,
+    exists = true,
+    doa = SVector(0, 0, 1)
+)
+    CWJammer(
+        Float32,
+        id,
+        jnr,
+        doppler = doppler,
+        phase = phase,
+        exists = exists,
+        doa = doa
     )
 end
 
 function gen_signal!(
     jammer::CWJammer,
-    sample_frequency,
+    sampling_frequency,
     intermediate_frequency,
     n0,
     num_samples::Integer,
     rng
 )
-    resize!(jammer.carrier, num_samples)
     resize!(jammer.signal, num_samples)
-    carrier = fpcarrier!(
-        jammer.carrier,
+    gen_carrier!(
+        jammer.signal,
         intermediate_frequency + get_carrier_doppler(jammer),
-        sample_frequency,
+        sampling_frequency,
         get_carrier_phase_2pi(jammer),
-        bits = Val(7)
+        get_amplitude(jammer, n0, sampling_frequency)
     )
-    jammer.signal .= carrier .* get_amplitude(jammer, n0, sample_frequency) ./ 1 << 7
-    jammer.signal
 end
 
 function NoiseJammer(
+    ::Type{T},
     id,
     jnr::Unitful.Gain{Unitful.Decibel, :?, <:Real};
     exists::E = true,
     doa::D = SVector(0, 0, 1)
 ) where {
+    T <: AbstractFloat,
     D <: Union{SVector{3}, AbstractDOA},
     E <: Union{Bool, AbstractExistence}
 }
-    signal = StructArray{Complex{eltype(float(jnr.val))}}(undef, 0)
-    NoiseJammer{eltype(float(jnr.val)), D, E, eltype(float(jnr))}(
+    signal = StructArray{Complex{T}}(undef, 0)
+    NoiseJammer{T, D, E, eltype(float(jnr))}(
         id,
         float(jnr),
         exists,
         doa,
         signal
+    )
+end
+
+function NoiseJammer(
+    id,
+    jnr;
+    exists = true,
+    doa = SVector(0, 0, 1)
+)
+    NoiseJammer(
+        Float32,
+        id,
+        jnr,
+        exists = exists,
+        doa = doa
     )
 end
 
@@ -105,7 +137,7 @@ function gen_signal!(
 )
     resize!(jammer.signal, num_samples)
     signal = randn!(rng, jammer.signal)
-    jammer.signal .= signal .* get_amplitude(jammer, n0, sample_frequency)
+    jammer.signal .*= get_amplitude(jammer, n0, sample_frequency)
     jammer.signal
 end
 
@@ -129,7 +161,6 @@ function propagate(
         get_jammer_to_noise_ratio(jammer),
         exists,
         doa,
-        jammer.carrier,
         jammer.signal
     )
 end
@@ -147,8 +178,8 @@ function propagate(
     NoiseJammer(jammer.id, get_jammer_to_noise_ratio(jammer), exists, doa, jammer.signal)
 end
 
-@inline function get_amplitude(jammer::AbstractJammer, n0, sample_frequency)
-    sqrt(uconvertp(NoUnits, jammer.jnr) * n0 * sample_frequency)
+@inline function get_amplitude(jammer::AbstractJammer{T}, n0, sample_frequency) where T
+    T(sqrt(uconvertp(NoUnits, jammer.jnr) * n0 * sample_frequency))
 end
 @inline get_carrier_phase(jammer::CWJammer) = 2π * jammer.phase
 @inline get_carrier_phase_2pi(jammer::CWJammer) = jammer.phase
