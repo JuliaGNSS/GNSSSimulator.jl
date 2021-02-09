@@ -1,5 +1,18 @@
 @testset "Jammer" begin
 
+    @testset "Create jammer with integers" begin
+        jammer = CWJammer(
+            1,
+            12dB,
+            doppler = 1100Hz,
+            phase = 1,
+            exists = true,
+            doa = SVector(0, 0, 1)
+        )
+        @test @inferred(get_jammer_to_noise_ratio(jammer)) == 12dB
+        @test @inferred(get_carrier_doppler(jammer)) == 1100Hz
+    end
+
     @testset "CW Jammer" begin
         jammer = CWJammer(
             1,

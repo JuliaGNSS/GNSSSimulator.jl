@@ -66,7 +66,7 @@ function ConstantDopplerSatellite(
     end
     code = Vector{Int8}(undef, 0)
     signal = StructArray{Complex{T}}(undef, 0)
-    ConstantDopplerSatellite(
+    ConstantDopplerSatellite{S,T,D,E,C}(
         system,
         prn,
         carrier_doppler,

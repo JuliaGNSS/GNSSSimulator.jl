@@ -20,6 +20,22 @@
         @test doppler ≈ 0Hz rtol = 1
     end
 
+    @testset "Create satellite with integers" begin
+        system = GPSL1()
+        sat = ConstantDopplerSatellite(
+            system,
+            1,
+            carrier_doppler = 1000Hz,
+            carrier_phase = 1,
+            code_phase = 100,
+            cn0 = 45dBHz
+        )
+
+        @test @inferred(GNSSSimulator.get_carrier_phase(sat)) == 1
+        @test @inferred(GNSSSimulator.get_code_phase(sat)) == 100
+        @test @inferred(GNSSSimulator.get_carrier_doppler(sat)) == 1000Hz
+    end
+
     @testset "Satellite signal" begin
         system = GPSL1()
         sat = ConstantDopplerSatellite(
