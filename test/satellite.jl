@@ -20,6 +20,22 @@
         @test doppler ≈ 0Hz rtol = 1
     end
 
+    @testset "Create satellite with integers" begin
+        system = GPSL1()
+        sat = ConstantDopplerSatellite(
+            system,
+            1,
+            carrier_doppler = 1000Hz,
+            carrier_phase = 1,
+            code_phase = 100,
+            cn0 = 45dBHz
+        )
+
+        @test @inferred(GNSSSimulator.get_carrier_phase(sat)) == 1
+        @test @inferred(GNSSSimulator.get_code_phase(sat)) == 100
+        @test @inferred(GNSSSimulator.get_carrier_doppler(sat)) == 1000Hz
+    end
+
     @testset "Satellite signal" begin
         system = GPSL1()
         sat = ConstantDopplerSatellite(
@@ -34,10 +50,10 @@
         @test @inferred(GNSSSimulator.get_carrier_phase(sat)) == π / 2
         @test @inferred(GNSSSimulator.get_code_phase(sat)) == 100
 
-        carrier_code = StructArray{Complex{Int16}}((ones(Int16, 2500), ones(Int16, 2500)))
+        code = Vector{Int8}(undef, 2500)
 
-        carrier_code = @inferred GNSSSimulator.multiply_with_code!(
-            carrier_code,
+        code = @inferred GNSSSimulator.gen_code!(
+            code,
             system,
             1023e3Hz + 1Hz,
             2.5e6Hz,
@@ -45,12 +61,7 @@
             1
         )
 
-        @test carrier_code.re == get_code.(
-            system,
-            (0:2499) .* (1023e3 .+ 1) ./ 2.5e6 .+ 120,
-            1
-        )
-        @test carrier_code.im == get_code.(
+        @test code == get_code.(
             system,
             (0:2499) .* (1023e3 .+ 1) ./ 2.5e6 .+ 120,
             1

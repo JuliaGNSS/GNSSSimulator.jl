@@ -1,5 +1,18 @@
 @testset "Jammer" begin
 
+    @testset "Create jammer with integers" begin
+        jammer = CWJammer(
+            1,
+            12dB,
+            doppler = 1100Hz,
+            phase = 1,
+            exists = true,
+            doa = SVector(0, 0, 1)
+        )
+        @test @inferred(get_jammer_to_noise_ratio(jammer)) == 12dB
+        @test @inferred(get_carrier_doppler(jammer)) == 1100Hz
+    end
+
     @testset "CW Jammer" begin
         jammer = CWJammer(
             1,
@@ -10,7 +23,7 @@
             doa = SVector(0, 0, 1)
         )
         @test @inferred(get_jammer_to_noise_ratio(jammer)) == 12dB
-        @test @inferred(get_amplitude(jammer, 2/Hz, 1000Hz)) == sqrt(10^(12/10) * 2000)
+        @test @inferred(get_amplitude(jammer, 2/Hz, 1000Hz)) ≈ sqrt(10^(12/10) * 2000)
         @test @inferred(get_existence(jammer)) == true
         @test @inferred(get_id(jammer)) == 1
         @test @inferred(get_carrier_doppler(jammer)) == 1100Hz
@@ -56,7 +69,7 @@
     @testset "Noise Jammer" begin
         noise_jammer = NoiseJammer(1, 12dB, exists = true, doa = SVector(0, 0, 1))
         @test @inferred(get_jammer_to_noise_ratio(noise_jammer)) == 12dB
-        @test @inferred(get_amplitude(noise_jammer, 2/Hz, 1000Hz)) ==
+        @test @inferred(get_amplitude(noise_jammer, 2/Hz, 1000Hz)) ≈
             sqrt(10^(12/10) * 2000)
         @test @inferred(get_existence(noise_jammer)) == true
         @test @inferred(get_id(noise_jammer)) == 1
@@ -71,7 +84,7 @@
             rng
         )
         rng = MersenneTwister(1234)
-        @test signal == randn(rng, ComplexF64, 2500) .* sqrt(10^(12/10) * 2.5e6)
+        @test signal ≈ randn(rng, ComplexF64, 2500) .* sqrt(10^(12/10) * 2.5e6)
 
         next_jammer = @inferred GNSSSimulator.propagate(
             noise_jammer,

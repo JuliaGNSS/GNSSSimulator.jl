@@ -1,13 +1,14 @@
 name = "GNSSSimulator"
 uuid = "977f7ad6-a835-5a29-8baf-0a05749df2f3"
 authors = ["Soeren Zorn <soeren.zorn@nav.rwth-aachen.de>"]
-version = "0.6.0"
+version = "0.6.1"
 
 [deps]
 CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 GNSSSignals = "52c80523-2a4e-5c38-8979-05588f836870"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
 Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 PhasedArray = "26694ec9-1e1a-50ce-959e-f72fe0aa84a3"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -19,13 +20,15 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 [compat]
 CoordinateTransformations = "0.5"
 DocStringExtensions = "0.6, 0.7, 0.8"
-GNSSSignals = "0.14"
+GNSSSignals = "0.14, 0.15"
 Parameters = "0.11, 0.12"
 PhasedArray = "0.6"
+StructArrays = "0.4"
+LoopVectorization = "0.9, 0.10, 0.11"
 Rotations = "0.10, 0.11, 0.12, 0.13, 1.0"
 StaticArrays = "0.9, 0.10, 0.11, 0.12, 1.0"
 Unitful = "0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18"
-julia = "1.4"
+julia = "1.5"
 
 [extras]
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"

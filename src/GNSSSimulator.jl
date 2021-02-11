@@ -11,7 +11,8 @@ module GNSSSimulator
         Parameters,
         PhasedArray,
         Random,
-        StructArrays
+        StructArrays,
+        LoopVectorization
 
     import Base.transpose
     import Unitful: Hz, rad, s, m, dB, °, dBHz, upreferred
@@ -53,7 +54,7 @@ export
     get_prn,
     get_id,
     get_jammer_to_noise_ratio,
-    get_sample_frequency,
+    get_sampling_frequency,
     get_intermediate_frequency,
     get_measurement!,
     get_measurement
@@ -67,6 +68,7 @@ export
         index < size(values, 1) ? values[index] : values[end]
     end
 
+    include("carrier.jl")
     include("attitude.jl")
     include("doa.jl")
     include("existence.jl")

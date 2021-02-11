@@ -23,7 +23,7 @@
         sats = (sat1,sat2)
         receiver = @inferred Receiver(2.5e6Hz)
 
-        signal = StructArray{ComplexF64}(undef, 2500)
+        signal = StructArray{ComplexF32}(undef, 2500)
         rng = MersenneTwister(1234)
         measurement, next_receiver, next_sats = @inferred get_measurement!(
             signal,
@@ -33,15 +33,14 @@
             rng
         )
 
-        carrier = StructArray{Complex{Int16}}(undef, 2500)
-        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        carrier = cis.(2π .* 1000.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.25)
         reference_signal = carrier .*
             get_code.(system, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
-            sqrt(10^(45 / 10)) ./ 1 << 7
-        fpcarrier!(carrier, 500.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+            sqrt(10^(45 / 10))
+        carrier = cis.(2π .* 500.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.25)
         reference_signal += carrier .*
             get_code.(system, (0:2499) .* (1023e3 + 500 / 1540) ./ 2.5e6 .+ 50, 2) .*
-            sqrt(10^(45 / 10)) ./ 1 << 7
+            sqrt(10^(45 / 10))
         rng = MersenneTwister(1234)
         reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
         @test measurement ≈ reference_signal
@@ -59,45 +58,47 @@
         )
         @test measurement ≈ reference_signal
 
-        sat1f32 = ConstantDopplerSatellite(
+        sat1f64 = ConstantDopplerSatellite(
+            Float64,
             system,
             1,
             carrier_doppler = 1000.0Hz,
             carrier_phase = π / 2,
             code_phase = 100.0,
-            cn0 = Float32(45)dBHz
+            cn0 = 45dBHz
         )
-        sat2f32 = ConstantDopplerSatellite(
+        sat2f64 = ConstantDopplerSatellite(
+            Float64,
             system,
             2,
             carrier_doppler = 500.0Hz,
             carrier_phase = π / 2,
             code_phase = 50.0,
-            cn0 = Float32(45)dBHz
+            cn0 = 45dBHz
         )
-        satsf32 = (sat1f32,sat2f32)
-        receiverf32 = @inferred Receiver(2.5e6Hz, gain_phase_mism_crosstalk = Float32(1.0))
+        satsf64 = (sat1f64,sat2f64)
+        receiver = @inferred Receiver(2.5e6Hz)
 
-        signalf32 = StructArray{ComplexF32}(undef, 2500)
+        signalf64 = StructArray{ComplexF64}(undef, 2500)
         rng = MersenneTwister(1234)
-        measurementf32, next_receiverf32, next_satsf32 = @inferred get_measurement!(
-            signalf32,
-            receiverf32,
-            satsf32,
+        measurementf64, next_receiverf64, next_satsf64 = @inferred get_measurement!(
+            signalf64,
+            receiver,
+            satsf64,
             manifold,
             rng
         )
-        @test measurementf32 ≈ reference_signal
+        @test measurementf64 ≈ reference_signal
 
         rng = MersenneTwister(1234)
-        measurementf32, next_receiver, next_sats = @inferred get_measurement(
+        measurementf64, next_receiver, next_sats = @inferred get_measurement(
             2500,
-            receiverf32,
-            satsf32,
+            receiver,
+            satsf64,
             manifold,
             rng
         )
-        @test measurementf32 ≈ reference_signal
+        @test measurementf64 ≈ reference_signal
     end
 
     @testset "Non existing Emitter" begin
@@ -124,7 +125,7 @@
         sats = (sat1,sat2)
         receiver = @inferred Receiver(2.5e6Hz)
 
-        signal = StructArray{ComplexF64}(undef, 2500)
+        signal = StructArray{ComplexF32}(undef, 2500)
         rng = MersenneTwister(1234)
         measurement, next_receiver, next_sats = @inferred get_measurement!(
             signal,
@@ -134,13 +135,12 @@
             rng
         )
 
-        carrier = StructArray{Complex{Int16}}(undef, 2500)
-        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        carrier = cis.(2π .* 1000.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.25)
         reference_signal = carrier .*
             get_code.(system, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
-            sqrt(10^(45 / 10)) ./ 1 << 7
+            sqrt(10^(45 / 10))
         rng = MersenneTwister(1234)
-        reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
+        reference_signal += randn(rng, ComplexF32, 2500) .* sqrt(2.5e6)
         @test measurement ≈ reference_signal
     end
 
@@ -180,13 +180,12 @@
         )
         measurement = [measurement1; measurement2]
 
-        carrier = StructArray{Complex{Int16}}(undef, 5000)
-        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        carrier = cis.(2π .* 1000.0Hz ./ 2.5e6Hz .* (0:4999) .+ 2π .* 0.25)
         reference_signal = carrier .*
             get_code.(system, (0:4999) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
-            sqrt(10^(45 / 10)) ./ 1 << 7
+            sqrt(10^(45 / 10))
         rng = MersenneTwister(1234)
-        reference_signal += randn(rng, ComplexF64, 5000) .* sqrt(2.5e6)
+        reference_signal += randn(rng, ComplexF32, 5000) .* sqrt(2.5e6)
 
         @test measurement.im ≈ imag.(reference_signal)
         # Slightly not contineous because of Float and Fixed point representation?
@@ -225,13 +224,12 @@
             manifold,
             rng
         )
-        carrier = StructArray{Complex{Int16}}(undef, 2500)
-        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        carrier = cis.(2π .* 1000.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.25)
         reference_signal = carrier .*
             get_code.(system, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
-            sqrt(10^(45 / 10)) ./ 1 << 7 .* transpose([1.0, 1.0])
+            sqrt(10^(45 / 10)) .* transpose([1.0, 1.0])
         rng = MersenneTwister(1234)
-        reference_signal += randn(rng, ComplexF64, 2500, 2) .* sqrt(2.5e6)
+        reference_signal += randn(rng, ComplexF32, 2500, 2) .* sqrt(2.5e6)
         reference_signal = reference_signal * transpose(gpmc)
         @test measurement ≈ reference_signal
     end
@@ -273,19 +271,18 @@
             rng
         )
 
-        carrier = StructArray{Complex{Int16}}(undef, 2500)
-        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        carrier = cis.(2π .* 1000.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.25)
         reference_signal = carrier .*
             get_code.(gpsl1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
-            sqrt(10^(45 / 10)) ./ 1 << 7
-        fpcarrier!(carrier, 500.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+            sqrt(10^(45 / 10))
+        carrier = cis.(2π .* 500.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.25)
         reference_signal += carrier .*
             get_code.(gpsl5, (0:2499) .* (1023e4 + 500 / 115) ./ 2.5e6 .+ 50, 1) .*
-            sqrt(10^(45 / 10)) ./ 1 << 7
+            sqrt(10^(45 / 10))
         rng = MersenneTwister(1234)
         reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
-        fpcarrier!(carrier, 100.0Hz, 2.5e6Hz, 0.125, bits = Val(7))
-        reference_signal += carrier .* sqrt(10^(10 / 10) * 2.5e6) ./ 1 << 7
+        carrier = cis.(2π .* 100.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.125)
+        reference_signal += carrier .* sqrt(10^(10 / 10) * 2.5e6)
         @test measurement ≈ reference_signal
 
     end
@@ -329,19 +326,18 @@
             rng
         )
 
-        carrier = StructArray{Complex{Int16}}(undef, 2500)
-        fpcarrier!(carrier, 1000.0Hz, 2.5e6Hz, 0.25, bits = Val(7))
+        carrier = cis.(2π .* 1000.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.25)
         reference_signal = carrier .*
             get_code.(system, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
-            sqrt(10^(45 / 10)) ./ 1 << 7
-        fpcarrier!(carrier, 1010.0Hz, 2.5e6Hz, 0.3125, bits = Val(7))
+            sqrt(10^(45 / 10))
+        carrier = cis.(2π .* 1010.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.3125)
         reference_signal += carrier .*
             get_code.(system, (0:2499) .* (1023e3 + 1010 / 1540) ./ 2.5e6 .+ 110, 1) .*
-            sqrt(10^(42 / 10)) ./ 1 << 7
+            sqrt(10^(42 / 10))
         rng = MersenneTwister(1234)
         reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
-        fpcarrier!(carrier, 100.0Hz, 2.5e6Hz, 0.125, bits = Val(7))
-        reference_signal += carrier .* sqrt(10^(10 / 10) * 2.5e6) ./ 1 << 7
+        carrier = cis.(2π .* 100.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.125)
+        reference_signal += carrier .* sqrt(10^(10 / 10) * 2.5e6)
         @test measurement ≈ reference_signal
     end
 end

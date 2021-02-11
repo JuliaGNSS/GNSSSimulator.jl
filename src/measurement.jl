@@ -1,7 +1,7 @@
 ### Single type of emitters
 function get_measurement(
     num_samples,
-    receiver::AbstractReceiver{T},
+    receiver::AbstractReceiver,
     emitters::Tuple{Vararg{AbstractEmitter{T}}},
     manifold::AbstractManifold{1} = IdealManifold(),
     rng = Random.GLOBAL_RNG
@@ -12,7 +12,7 @@ end
 
 function get_measurement(
     num_samples,
-    receiver::AbstractReceiver{T},
+    receiver::AbstractReceiver,
     emitters::Tuple{Vararg{AbstractEmitter{T}}},
     manifold::AbstractManifold{N},
     rng = Random.GLOBAL_RNG
@@ -23,7 +23,7 @@ end
 
 function get_measurement!(
     signal::Union{AbstractMatrix{Complex{T}}, AbstractVector{Complex{T}}},
-    receiver::AbstractReceiver{T},
+    receiver::AbstractReceiver,
     emitters::Tuple{Vararg{AbstractEmitter{T}}},
     manifold::AbstractManifold{N} = IdealManifold(),
     rng = Random.GLOBAL_RNG
@@ -32,7 +32,7 @@ function get_measurement!(
     existing_emitters = filteremitters(get_existence, emitters)
     emitter_signals = gen_signal!.(
         existing_emitters,
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         get_intermediate_frequency(receiver),
         get_noise_density(receiver),
         num_samples,
@@ -40,7 +40,7 @@ function get_measurement!(
     )
     steer_vecs = get_steer_vecs(T, existing_emitters, receiver, manifold)
     randn!(rng, signal)
-    signal .*= get_noise_std(receiver)
+    signal .*= T(get_noise_std(receiver))
     foreach(emitter_signals, steer_vecs) do emitter_signal, steer_vec
         signal .+= emitter_signal .* transpose(steer_vec)
     end
@@ -54,7 +54,7 @@ function get_measurement!(
         emitters,
         num_samples,
         get_intermediate_frequency(receiver),
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         Ref(rng)
     )
     signal, next_receiver, next_emitters
@@ -63,31 +63,31 @@ end
 ### Two types of emitters
 function get_measurement(
     num_samples,
-    receiver::AbstractReceiver{T},
+    receiver::AbstractReceiver,
     emitters1::Tuple{Vararg{AbstractEmitter{T}}},
     emitters2::Tuple{Vararg{AbstractEmitter{T}}},
     manifold::AbstractManifold{1} = IdealManifold(),
     rng = Random.GLOBAL_RNG
 ) where T <: AbstractFloat
-    signal = StructArray{Complex{Float64}}(undef, num_samples)
+    signal = StructArray{Complex{T}}(undef, num_samples)
     get_measurement!(signal, receiver, emitters1, emitters2, manifold, rng)
 end
 
 function get_measurement(
     num_samples,
-    receiver::AbstractReceiver{T},
+    receiver::AbstractReceiver,
     emitters1::Tuple{Vararg{AbstractEmitter{T}}},
     emitters2::Tuple{Vararg{AbstractEmitter{T}}},
     manifold::AbstractManifold{N},
     rng = Random.GLOBAL_RNG
 ) where {N, T <: AbstractFloat}
-    signal = StructArray{Complex{Float64}}(undef, num_samples, N)
+    signal = StructArray{Complex{T}}(undef, num_samples, N)
     get_measurement!(signal, receiver, emitters1, emitters2, manifold, rng)
 end
 
 function get_measurement!(
     signal::Union{AbstractMatrix{Complex{T}}, AbstractVector{Complex{T}}},
-    receiver::AbstractReceiver{T},
+    receiver::AbstractReceiver,
     emitters1::Tuple{Vararg{AbstractEmitter{T}}},
     emitters2::Tuple{Vararg{AbstractEmitter{T}}},
     manifold::AbstractManifold{N} = IdealManifold(),
@@ -98,7 +98,7 @@ function get_measurement!(
     existing_emitters2 = filteremitters(get_existence, emitters2)
     emitter_signals1 = gen_signal!.(
         existing_emitters1,
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         get_intermediate_frequency(receiver),
         get_noise_density(receiver),
         num_samples,
@@ -106,7 +106,7 @@ function get_measurement!(
     )
     emitter_signals2 = gen_signal!.(
         existing_emitters2,
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         get_intermediate_frequency(receiver),
         get_noise_density(receiver),
         num_samples,
@@ -115,7 +115,7 @@ function get_measurement!(
     steer_vecs1 = get_steer_vecs(T, existing_emitters1, receiver, manifold)
     steer_vecs2 = get_steer_vecs(T, existing_emitters2, receiver, manifold)
     randn!(rng, signal)
-    signal .*= get_noise_std(receiver)
+    signal .*= T(get_noise_std(receiver))
     foreach(emitter_signals1, steer_vecs1) do emitter_signal, steer_vec
         signal .+= emitter_signal .* transpose(steer_vec)
     end
@@ -132,14 +132,14 @@ function get_measurement!(
         emitters1,
         num_samples,
         get_intermediate_frequency(receiver),
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         Ref(rng)
     )
     next_emitters2 = propagate.(
         emitters2,
         num_samples,
         get_intermediate_frequency(receiver),
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         Ref(rng)
     )
     measurement, next_receiver, next_emitters1, next_emitters2
@@ -148,33 +148,33 @@ end
 ### Three types of emitters
 function get_measurement(
     num_samples,
-    receiver::AbstractReceiver{T},
+    receiver::AbstractReceiver,
     emitters1::Tuple{Vararg{AbstractEmitter{T}}},
     emitters2::Tuple{Vararg{AbstractEmitter{T}}},
     emitters3::Tuple{Vararg{AbstractEmitter{T}}},
     manifold::AbstractManifold{1} = IdealManifold(),
     rng = Random.GLOBAL_RNG
 ) where {T <: AbstractFloat}
-    signal = StructArray{Complex{Float64}}(undef, num_samples)
+    signal = StructArray{Complex{T}}(undef, num_samples)
     get_measurement!(signal, receiver, emitters1, emitters2, emitters3, manifold, rng)
 end
 
 function get_measurement(
     num_samples,
-    receiver::AbstractReceiver{T},
+    receiver::AbstractReceiver,
     emitters1::Tuple{Vararg{AbstractEmitter{T}}},
     emitters2::Tuple{Vararg{AbstractEmitter{T}}},
     emitters3::Tuple{Vararg{AbstractEmitter{T}}},
     manifold::AbstractManifold{N},
     rng = Random.GLOBAL_RNG
 ) where {N, T <: AbstractFloat}
-    signal = StructArray{Complex{Float64}}(undef, num_samples, N)
+    signal = StructArray{Complex{T}}(undef, num_samples, N)
     get_measurement!(signal, receiver, emitters1, emitters2, emitters3, manifold, rng)
 end
 
 function get_measurement!(
     signal::Union{AbstractMatrix{Complex{T}}, AbstractVector{Complex{T}}},
-    receiver::AbstractReceiver{T},
+    receiver::AbstractReceiver,
     emitters1::Tuple{Vararg{AbstractEmitter{T}}},
     emitters2::Tuple{Vararg{AbstractEmitter{T}}},
     emitters3::Tuple{Vararg{AbstractEmitter{T}}},
@@ -187,7 +187,7 @@ function get_measurement!(
     existing_emitters3 = filteremitters(get_existence, emitters3)
     emitter_signals1 = gen_signal!.(
         existing_emitters1,
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         get_intermediate_frequency(receiver),
         get_noise_density(receiver),
         num_samples,
@@ -195,7 +195,7 @@ function get_measurement!(
     )
     emitter_signals2 = gen_signal!.(
         existing_emitters2,
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         get_intermediate_frequency(receiver),
         get_noise_density(receiver),
         num_samples,
@@ -203,7 +203,7 @@ function get_measurement!(
     )
     emitter_signals3 = gen_signal!.(
         existing_emitters3,
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         get_intermediate_frequency(receiver),
         get_noise_density(receiver),
         num_samples,
@@ -213,7 +213,7 @@ function get_measurement!(
     steer_vecs2 = get_steer_vecs(T, existing_emitters2, receiver, manifold)
     steer_vecs3 = get_steer_vecs(T, existing_emitters3, receiver, manifold)
     randn!(rng, signal)
-    signal .*= get_noise_std(receiver)
+    signal .*= T(get_noise_std(receiver))
     foreach(emitter_signals1, steer_vecs1) do emitter_signal, steer_vec
         signal .+= emitter_signal .* transpose(steer_vec)
     end
@@ -233,21 +233,21 @@ function get_measurement!(
         emitters1,
         num_samples,
         get_intermediate_frequency(receiver),
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         Ref(rng)
     )
     next_emitters2 = propagate.(
         emitters2,
         num_samples,
         get_intermediate_frequency(receiver),
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         Ref(rng)
     )
     next_emitters3 = propagate.(
         emitters3,
         num_samples,
         get_intermediate_frequency(receiver),
-        get_sample_frequency(receiver),
+        get_sampling_frequency(receiver),
         Ref(rng)
     )
     signal, next_receiver, next_emitters1, next_emitters2, next_emitters3

@@ -15,6 +15,7 @@ import Unitful: dB, Hz, kHz, MHz, GHz, dBHz, m, s, rad, ms, μs
 
 const EARTH_RADIUS = 6_360_000m
 
+include("carrier.jl")
 include("attitude.jl")
 include("doa.jl")
 include("existence.jl")

@@ -8,7 +8,7 @@ struct ConstantDopplerStructuralInterference{
 end
 
 function ConstantDopplerStructuralInterference(
-    sat::ConstantDopplerSatellite{S},
+    sat::ConstantDopplerSatellite{S, T},
     signal_amplification::Unitful.Gain{Unitful.Decibel, :?, <:Real};
     added_carrier_doppler = NaN*Hz,
     added_carrier_phase = NaN,
@@ -19,6 +19,7 @@ function ConstantDopplerStructuralInterference(
     added_signal_path = 0.0m
 ) where {
     S <: AbstractGNSS,
+    T <: AbstractFloat,
     D <: Union{SVector{3}, AbstractDOA},
     E <: Union{Bool, AbstractExistence}
 }
@@ -55,9 +56,9 @@ function ConstantDopplerStructuralInterference(
         code_phase = mod(get_code_phase(sat) + added_code_phase, get_code_length(system))
     end
     cn0 = get_carrier_to_noise_density_ratio(sat) + signal_amplification
-    carrier_code = StructArray{Complex{Int16}}(undef, 0)
-    signal = StructArray{Complex{eltype(float(cn0.val.val))}}(undef, 0)
-    sat = ConstantDopplerSatellite{S, eltype(float(cn0.val.val)), D, E, eltype(float(cn0))}(
+    code = Vector{Int8}(undef, 0)
+    signal = StructArray{Complex{T}}(undef, 0)
+    sat = ConstantDopplerSatellite{S, T, D, E, eltype(float(cn0))}(
         system,
         get_prn(sat),
         carrier_doppler,
@@ -66,7 +67,7 @@ function ConstantDopplerStructuralInterference(
         cn0,
         exists,
         doa,
-        carrier_code,
+        code,
         signal
     )
     ConstantDopplerStructuralInterference(sat)
