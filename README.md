@@ -1,18 +1,18 @@
 [![pipeline status](https://git.rwth-aachen.de/nav/GNSSSimulator.jl/badges/master/pipeline.svg)](https://git.rwth-aachen.de/nav/GNSSSimulator.jl/commits/master)
 [![coverage report](https://git.rwth-aachen.de/nav/GNSSSimulator.jl/badges/master/coverage.svg)](https://git.rwth-aachen.de/nav/GNSSSimulator.jl/commits/master)
 # GNSSSimulator
-Simulate GNSS signals, jammer, spoofer, multipath.
+Simulate GNSS signals, jammers and structural interference.
 
 ## Features
 
- * GNSS signals
- * Jammers
- * Structural interference (spoofer, multipath)
- * Phased arrays:
-  * Gain and phase mismatches
-  * Crosstalk effects
-  * Steering vectors
-  * Attitude
+  * GNSS signals
+  * Jammers
+  * Structural interference
+  * Phased arrays:
+    * Gain and phase mismatches
+    * Crosstalk effects
+    * Steering vectors
+    * Attitude
 
 ## Getting started
 
@@ -34,10 +34,6 @@ receiver = Receiver(sample_freq)
 measurement1, next_receiver1, next_emitters1 = get_measurement(2000, receiver, emitters)
 measurement2, next_receiver2, next_emitters2 = get_measurement(2000, next_receiver1, next_emitters1)
 ```
-
-## Todo
-
-* DOA calculation based on absolute time and NMEA
 
 ## License
 
