@@ -196,8 +196,8 @@
 
     @testset "Multiple antennas" begin
         manifold = IdealManifold(
+            1575420e3,
             0.1904 / 4 * SVector(SVector(1, 1, 0), SVector(-1, 1, 0)),
-            1575420e3
         )
         system = GPSL1()
 

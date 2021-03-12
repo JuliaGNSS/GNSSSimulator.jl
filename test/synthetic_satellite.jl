@@ -49,8 +49,8 @@
     @test @inferred(get_gnss_system(next_synthetic_sat)) == system
 
     manifold = IdealManifold(
+        1575420e3,
         0.1904 / 4 * SVector(SVector(1, 1, 0), SVector(-1, 1, 0)),
-        1575420e3
     )
     @test get_steer_vec(manifold, synthetic_sat, RotXYZ(0.0,0.0,0.0)) == [1.0, 1.0]
 end
