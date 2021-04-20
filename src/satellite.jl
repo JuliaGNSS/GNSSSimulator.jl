@@ -144,13 +144,11 @@ function gen_code!(
     start_code_phase,
     prn::Integer
 )
-    fp = 64 - min_bits_for_code_length(system) - 1
+    fp = sizeof(Int) * 8 - min_bits_for_code_length(system) - 1
     fp_delta = floor(Int, code_frequency * 1 << fp / sample_frequency)
     fp_start_code_phase = floor(Int, start_code_phase * 1 << fp)
-    fp_total_code_length = floor(
-        Int,
+    fp_total_code_length =
         get_code_length(system) * get_secondary_code_length(system) * 1 << fp
-    )
     fp_code_phase = fp_start_code_phase - fp_delta
     @inbounds for i = 1:length(code)
         fp_code_phase += fp_delta
@@ -213,10 +211,20 @@ end
 $(SIGNATURES)
 
 Calculate amplitude of a signal based on the carrier-to-noise-density-ratio (CN0) `cn0` in
-[dB-Hz] and the frequency bandwidth `bandwidth` in [Hz], assumes noise power to be 1.
+[dB-Hz] and the noise density `n0` in [1/Hz].
 """
 function calc_amplitude_from_cn0(cn0, n0)
     sqrt(linear(cn0) * n0)
+end
+
+"""
+$(SIGNATURES)
+
+Calculate amplitude of a signal based on the carrier-to-noise-density-ratio (CN0) `cn0` in
+[dB-Hz], the noise density `n0` in [1/Hz] and steering vector influence.
+"""
+function get_amplitude_with_ant_influence(cn0, n0, steer_vec)
+    sqrt(linear(cn0) * n0) * norm(steer_vec) / sqrt(length(steer_vec))
 end
 
 """

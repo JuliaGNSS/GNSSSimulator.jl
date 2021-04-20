@@ -12,7 +12,7 @@ function DynamicDOA(doas::Vector{Spherical{T}}, time, sample_freq) where T
 end
 
 @with_kw struct LinearDynamicDOA{R <: Real} <: AbstractDOA
-    doa::Spherical{R}
+    doa::Spherical{R, R}
     Δazimuth::typeof(1.0rad / 1.0s) = 0.0rad / 1.0s
     Δelevation::typeof(1.0rad / 1.0s) = 0.0rad / 1.0s
 end
