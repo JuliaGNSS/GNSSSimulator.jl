@@ -1,5 +1,5 @@
-[![pipeline status](https://git.rwth-aachen.de/nav/GNSSSimulator.jl/badges/master/pipeline.svg)](https://git.rwth-aachen.de/nav/GNSSSimulator.jl/commits/master)
-[![coverage report](https://git.rwth-aachen.de/nav/GNSSSimulator.jl/badges/master/coverage.svg)](https://git.rwth-aachen.de/nav/GNSSSimulator.jl/commits/master)
+[![Tests](https://github.com/JuliaGNSS/GNSSSimulator.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/JuliaGNSS/GNSSSimulator.jl/actions)
+[![codecov](https://codecov.io/gh/JuliaGNSS/GNSSSimulator.jl/branch/master/graph/badge.svg?token=KCFJHJ4Q2T)](https://codecov.io/gh/JuliaGNSS/GNSSSimulator.jl)
 # GNSSSimulator
 Simulate GNSS signals, jammers and structural interference.
 
@@ -19,7 +19,7 @@ Simulate GNSS signals, jammers and structural interference.
 Install:
 ```julia
 julia> ]
-pkg> add git@git.rwth-aachen.de:nav/GNSSSimulator.jl.git
+pkg> add GNSSSimulator
 ```
 
 ## Usage

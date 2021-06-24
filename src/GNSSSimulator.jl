@@ -36,6 +36,7 @@ export
     AsymptoticGainPhaseMismCrosstalk,
     CWJammer,
     NoiseJammer,
+    DynamicJNR,
     Noise,
     Receiver,
     get_attitude,
@@ -68,6 +69,7 @@ export
         index < size(values, 1) ? values[index] : values[end]
     end
 
+    include("amplitude.jl")
     include("carrier.jl")
     include("attitude.jl")
     include("doa.jl")

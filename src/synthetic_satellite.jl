@@ -30,6 +30,7 @@ function propagate(
     num_samples,
     intermediate_frequency,
     sample_frequency,
+    n0,
     rng
 )
     SyntheticSatellite(
@@ -38,6 +39,7 @@ function propagate(
             num_samples,
             intermediate_frequency,
             sample_frequency,
+            n0,
             rng
         )
     )

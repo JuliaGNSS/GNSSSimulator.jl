@@ -90,6 +90,7 @@
             2500,
             100.0Hz,
             2.5e6Hz,
+            1.0/Hz,
             Random.GLOBAL_RNG
         )
 

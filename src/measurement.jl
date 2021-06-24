@@ -55,6 +55,7 @@ function get_measurement!(
         num_samples,
         get_intermediate_frequency(receiver),
         get_sampling_frequency(receiver),
+        get_noise_density(receiver),
         Ref(rng)
     )
     signal, next_receiver, next_emitters
@@ -133,6 +134,7 @@ function get_measurement!(
         num_samples,
         get_intermediate_frequency(receiver),
         get_sampling_frequency(receiver),
+        get_noise_density(receiver),
         Ref(rng)
     )
     next_emitters2 = propagate.(
@@ -140,6 +142,7 @@ function get_measurement!(
         num_samples,
         get_intermediate_frequency(receiver),
         get_sampling_frequency(receiver),
+        get_noise_density(receiver),
         Ref(rng)
     )
     measurement, next_receiver, next_emitters1, next_emitters2
@@ -234,6 +237,7 @@ function get_measurement!(
         num_samples,
         get_intermediate_frequency(receiver),
         get_sampling_frequency(receiver),
+        get_noise_density(receiver),
         Ref(rng)
     )
     next_emitters2 = propagate.(
@@ -241,6 +245,7 @@ function get_measurement!(
         num_samples,
         get_intermediate_frequency(receiver),
         get_sampling_frequency(receiver),
+        get_noise_density(receiver),
         Ref(rng)
     )
     next_emitters3 = propagate.(
@@ -248,6 +253,7 @@ function get_measurement!(
         num_samples,
         get_intermediate_frequency(receiver),
         get_sampling_frequency(receiver),
+        get_noise_density(receiver),
         Ref(rng)
     )
     signal, next_receiver, next_emitters1, next_emitters2, next_emitters3

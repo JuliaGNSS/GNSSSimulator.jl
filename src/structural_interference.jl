@@ -89,10 +89,11 @@ function propagate(
     num_samples,
     intermediate_frequency,
     sample_frequency,
+    n0,
     rng
 )
     ConstantDopplerStructuralInterference(
-        propagate(si.sat, num_samples, intermediate_frequency, sample_frequency, rng)
+        propagate(si.sat, num_samples, intermediate_frequency, sample_frequency, n0, rng)
     )
 end
 

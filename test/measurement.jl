@@ -46,7 +46,7 @@
         @test measurement ≈ reference_signal
 
         @test next_receiver == GNSSSimulator.propagate(receiver, 2500, rng)
-        @test next_sats == GNSSSimulator.propagate.(sats, 2500, 0.0Hz, 2.5e6Hz, Ref(rng))
+        @test next_sats == GNSSSimulator.propagate.(sats, 2500, 0.0Hz, 2.5e6Hz, 1.0/Hz, Ref(rng))
 
         rng = MersenneTwister(1234)
         measurement, next_receiver, next_sats = @inferred get_measurement(
@@ -169,7 +169,7 @@
         )
 
         @test next_receiver == GNSSSimulator.propagate(receiver, 2500, rng)
-        @test next_sats == GNSSSimulator.propagate.(sats, 2500, 0.0Hz, 2.5e6Hz, Ref(rng))
+        @test next_sats == GNSSSimulator.propagate.(sats, 2500, 0.0Hz, 2.5e6Hz, 1.0/Hz, Ref(rng))
 
         measurement2, next_receiver, next_sats = @inferred get_measurement(
             2500,

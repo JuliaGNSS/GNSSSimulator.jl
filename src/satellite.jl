@@ -170,6 +170,7 @@ function propagate(
     num_samples,
     intermediate_frequency,
     sample_frequency,
+    n0,
     rng
 ) where {S, T, D, E, C}
     system = sat.system

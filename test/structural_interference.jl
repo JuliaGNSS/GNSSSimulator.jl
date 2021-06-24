@@ -39,7 +39,7 @@
         sqrt(10^(42 / 10))
     @test sqrt(sum(abs2.(signal .- reference_signal)) / 2500) < 1e-2 * sqrt(10^(42 / 10))
 
-    next_si = @inferred GNSSSimulator.propagate(si, 1, 100.0Hz, 2e6Hz, Random.GLOBAL_RNG)
+    next_si = @inferred GNSSSimulator.propagate(si, 1, 100.0Hz, 2e6Hz, 1.0/Hz, Random.GLOBAL_RNG)
     @test @inferred(get_carrier_doppler(next_si)) == 1010Hz
     @test @inferred(get_code_doppler(next_si)) ≈ 1010Hz / 1540
     @test @inferred(get_carrier_phase(next_si)) ≈ π / 2 + π / 8 + 2π * 1110Hz / 2e6Hz

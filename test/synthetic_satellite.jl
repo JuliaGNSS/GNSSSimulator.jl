@@ -37,6 +37,7 @@
         1,
         100.0Hz,
         2e6Hz,
+        1.0/Hz,
         Random.GLOBAL_RNG
     )
     @test @inferred(get_carrier_doppler(next_synthetic_sat)) == 1000Hz
