@@ -5,7 +5,7 @@ struct ConstantDopplerSatellite{
     T <: AbstractFloat,
     D <: Union{SVector{3}, AbstractDOA},
     E <: Union{Bool, AbstractExistence},
-    C <: Unitful.Level
+    C <: Union{Unitful.Level, DynamicCN0}
 } <: AbstractSatellite{S, T}
     system::S
     prn::Int
@@ -36,7 +36,7 @@ function ConstantDopplerSatellite(
     T <: AbstractFloat,
     D <: Union{SVector{3}, AbstractDOA},
     E <: Union{Bool, AbstractExistence},
-    C <: Unitful.Level,
+    C <: Union{Unitful.Level, DynamicCN0},
 }
     if isnan(carrier_doppler)
         carrier_doppler = calc_doppler(
@@ -108,13 +108,13 @@ function ConstantDopplerSatellite(
 end
 
 function gen_signal!(
-    sat::ConstantDopplerSatellite{S},
+    sat::ConstantDopplerSatellite{S, T},
     sampling_frequency,
     intermediate_frequency,
     n0,
     num_samples::Integer,
     rng
-) where S <: AbstractGNSS
+) where {S <: AbstractGNSS, T}
     resize!(sat.code, num_samples)
     resize!(sat.signal, num_samples)
     carrier = gen_carrier!(
@@ -122,7 +122,7 @@ function gen_signal!(
         intermediate_frequency + get_carrier_doppler(sat),
         sampling_frequency,
         get_carrier_phase_2pi(sat),
-        get_amplitude(sat, n0)
+        T(get_amplitude(sat.cn0, n0)),
     )
     system = sat.system
     code = gen_code!(
@@ -183,13 +183,14 @@ function propagate(
     Δt = num_samples / sample_frequency
     exists = propagate(sat.exists, Δt, rng)
     doa = propagate(sat.doa, Δt, rng)
+    cn0 = propagate(sat.cn0, n0, Δt)
     ConstantDopplerSatellite{S, T, D, E, C}(
         system,
         sat.prn,
         sat.carrier_doppler,
         modded_carrier_phase,
         modded_code_phase,
-        get_carrier_to_noise_density_ratio(sat),
+        cn0,
         exists,
         doa,
         sat.code,
@@ -197,7 +198,6 @@ function propagate(
     )
 end
 
-@inline get_amplitude(sat::AbstractSatellite{S, T}, n0) where {S, T} = T(calc_amplitude_from_cn0(sat.cn0, n0))
 @inline get_carrier_doppler(sat::AbstractSatellite) = sat.carrier_doppler
 @inline get_code_doppler(sat::AbstractSatellite) =
     sat.carrier_doppler * get_code_center_frequency_ratio(sat.system)
@@ -225,7 +225,7 @@ Calculate amplitude of a signal based on the carrier-to-noise-density-ratio (CN0
 [dB-Hz], the noise density `n0` in [1/Hz] and steering vector influence.
 """
 function get_amplitude_with_ant_influence(cn0, n0, steer_vec)
-    sqrt(linear(cn0) * n0) * norm(steer_vec) / sqrt(length(steer_vec))
+    get_amplitude(cn0, n0) * norm(steer_vec) / sqrt(length(steer_vec))
 end
 
 """
@@ -240,6 +240,8 @@ function calc_sat_user_distance(distance_from_earth_center, doa)
         sqrt((EARTH_RADIUS * cos(init_doa.ϕ + π / 2))^2 - EARTH_RADIUS^2 +
         distance_from_earth_center^2)
 end
+
+@inline get_amplitude(sat::AbstractSatellite, n0) = get_amplitude(sat.cn0, n0)
 
 """
 $(SIGNATURES)

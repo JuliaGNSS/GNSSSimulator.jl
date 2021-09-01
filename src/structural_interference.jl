@@ -9,7 +9,7 @@ end
 
 function ConstantDopplerStructuralInterference(
     sat::ConstantDopplerSatellite{S, T},
-    signal_amplification::Unitful.Gain{Unitful.Decibel, :?, <:Real};
+    signal_amplification::Union{Unitful.Gain{Unitful.Decibel, :?, <:Real}, Unitful.Level, DynamicCN0};
     added_carrier_doppler = NaN*Hz,
     added_carrier_phase = NaN,
     added_code_phase = NaN,
@@ -55,10 +55,12 @@ function ConstantDopplerStructuralInterference(
     else
         code_phase = mod(get_code_phase(sat) + added_code_phase, get_code_length(system))
     end
-    cn0 = get_carrier_to_noise_density_ratio(sat) + signal_amplification
+    cn0 = typeof(signal_amplification) <: Unitful.Gain ?
+        float(get_carrier_to_noise_density_ratio(sat) + signal_amplification) :
+        signal_amplification
     code = Vector{Int8}(undef, 0)
     signal = StructArray{Complex{T}}(undef, 0)
-    sat = ConstantDopplerSatellite{S, T, D, E, eltype(float(cn0))}(
+    sat = ConstantDopplerSatellite{S, T, D, E, typeof(cn0)}(
         system,
         get_prn(sat),
         carrier_doppler,

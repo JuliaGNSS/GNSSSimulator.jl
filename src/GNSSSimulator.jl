@@ -58,7 +58,8 @@ export
     get_sampling_frequency,
     get_intermediate_frequency,
     get_measurement!,
-    get_measurement
+    get_measurement,
+    DynamicCN0
 
     propagate(val::Number, Δt, rng) = val
     const cart2sph = SphericalFromCartesian()
