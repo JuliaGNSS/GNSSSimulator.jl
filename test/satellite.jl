@@ -50,23 +50,6 @@
         @test @inferred(GNSSSimulator.get_carrier_phase(sat)) == π / 2
         @test @inferred(GNSSSimulator.get_code_phase(sat)) == 100
 
-        code = Vector{Int8}(undef, 2500)
-
-        code = @inferred GNSSSimulator.gen_code!(
-            code,
-            system,
-            1023e3Hz + 1Hz,
-            2.5e6Hz,
-            120,
-            1
-        )
-
-        @test code == get_code.(
-            system,
-            (0:2499) .* (1023e3 .+ 1) ./ 2.5e6 .+ 120,
-            1
-        )
-
         rng = MersenneTwister(1234)
         signal = @inferred GNSSSimulator.gen_signal!(
             sat,
