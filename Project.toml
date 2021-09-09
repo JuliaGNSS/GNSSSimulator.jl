@@ -1,7 +1,7 @@
 name = "GNSSSimulator"
 uuid = "977f7ad6-a835-5a29-8baf-0a05749df2f3"
 authors = ["Soeren Zorn <soeren.zorn@nav.rwth-aachen.de>"]
-version = "0.6.2"
+version = "0.6.3"
 
 [deps]
 CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
