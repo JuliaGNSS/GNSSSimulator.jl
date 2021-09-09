@@ -128,36 +128,14 @@ function gen_signal!(
     code = gen_code!(
         sat.code,
         system,
-        get_code_frequency(system) + get_code_doppler(sat),
+        get_prn(sat),
         sampling_frequency,
-        get_code_phase(sat),
-        get_prn(sat)
+        get_code_frequency(system) + get_code_doppler(sat),
+        get_code_phase(sat)
     )
     sat.signal .*= code
 end
 
-function gen_code!(
-    code,
-    system::AbstractGNSS,
-    code_frequency,
-    sample_frequency,
-    start_code_phase,
-    prn::Integer
-)
-    fp = sizeof(Int) * 8 - min_bits_for_code_length(system) - 1
-    fp_delta = floor(Int, code_frequency * 1 << fp / sample_frequency)
-    fp_start_code_phase = floor(Int, start_code_phase * 1 << fp)
-    fp_total_code_length =
-        get_code_length(system) * get_secondary_code_length(system) * 1 << fp
-    fp_code_phase = fp_start_code_phase - fp_delta
-    @inbounds for i = 1:length(code)
-        fp_code_phase += fp_delta
-        fp_code_phase -= (fp_code_phase >= fp_total_code_length) * fp_total_code_length
-        code_index = fp_code_phase >> fp
-        code[i] = get_code_unsafe(system, code_index, prn)
-    end
-    code
-end
 
 
 """
