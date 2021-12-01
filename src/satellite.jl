@@ -266,11 +266,10 @@ end
 """
 $(SIGNATURES)
 
-Calculates the Doppler based on elevation. Assumes satellite velocity only in elevation
-direction. Currently there is only a positive Doppler.
+Calculates a made up Doppler based on elevation and azimuth. 
 """
 function calc_doppler(distance_from_earth_center, doa, velocity, center_freq)
     doa_sph = cart2sph(get_doa(doa))
     center_freq / SPEED_OF_LIGHT * velocity * cos(π / 2 - asin(EARTH_RADIUS *
-        sin(π / 2 + doa_sph.ϕ) / distance_from_earth_center))
+        sin(π / 2 + doa_sph.ϕ) / distance_from_earth_center)) * cos(doa_sph.θ)
 end
