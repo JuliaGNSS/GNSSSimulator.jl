@@ -256,14 +256,16 @@
             cn0 = 45dBHz
         )
         sats = (sat1,sat2)
-        receiver = @inferred Receiver(2.5e6Hz)
+        receiver = @inferred Receiver(25e6Hz)
 
         jammer = CWJammer(1, 10dB, doppler = 100.0Hz, phase = π / 4)
         jammers = (jammer, )
 
+        num_samples = 25000
+
         rng = MersenneTwister(1234)
         measurement, next_receiver, next_sats, next_jammers = @inferred get_measurement(
-            2500,
+            num_samples,
             receiver,
             sats,
             jammers,
@@ -271,18 +273,18 @@
             rng
         )
 
-        carrier = cis.(2π .* 1000.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.25)
+        carrier = cis.(2π .* 1000.0Hz ./ 25e6Hz .* (0:num_samples-1) .+ 2π .* 0.25)
         reference_signal = carrier .*
-            get_code.(gpsl1, (0:2499) .* (1023e3 + 1000 / 1540) ./ 2.5e6 .+ 100, 1) .*
+            get_code.(gpsl1, (0:num_samples-1) .* (1023e3 + 1000 / 1540) ./ 25e6 .+ 100, 1) .*
             sqrt(10^(45 / 10))
-        carrier = cis.(2π .* 500.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.25)
+        carrier = cis.(2π .* 500.0Hz ./ 25e6Hz .* (0:num_samples-1) .+ 2π .* 0.25)
         reference_signal += carrier .*
-            get_code.(gpsl5, (0:2499) .* (1023e4 + 500 / 115) ./ 2.5e6 .+ 50, 1) .*
+            get_code.(gpsl5, (0:num_samples-1) .* (1023e4 + 500 / 115) ./ 25e6 .+ 50, 1) .*
             sqrt(10^(45 / 10))
         rng = MersenneTwister(1234)
-        reference_signal += randn(rng, ComplexF64, 2500) .* sqrt(2.5e6)
-        carrier = cis.(2π .* 100.0Hz ./ 2.5e6Hz .* (0:2499) .+ 2π .* 0.125)
-        reference_signal += carrier .* sqrt(10^(10 / 10) * 2.5e6)
+        reference_signal += randn(rng, ComplexF64, num_samples) .* sqrt(25e6)
+        carrier = cis.(2π .* 100.0Hz ./ 25e6Hz .* (0:num_samples-1) .+ 2π .* 0.125)
+        reference_signal += carrier .* sqrt(10^(10 / 10) * 25e6)
         @test measurement ≈ reference_signal
 
     end
