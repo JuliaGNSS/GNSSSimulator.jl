@@ -54,4 +54,8 @@
         0.1904 / 4 * SVector(SVector(1, 1, 0), SVector(-1, 1, 0)),
     )
     @test get_steer_vec(manifold, synthetic_sat, RotXYZ(0.0,0.0,0.0)) == [1.0, 1.0]
+
+    synthetic_sat_with_steer_vec = SyntheticSatellite(sat, SVector(1.0, 1.0im))
+    @test get_steer_vec(manifold, synthetic_sat_with_steer_vec, RotXYZ(0.0,0.0,0.0)) == [1.0, 1.0im]
+
 end

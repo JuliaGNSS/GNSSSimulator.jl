@@ -1,5 +1,33 @@
 abstract type AbstractAttitude end
 
+@with_kw struct RandomWalkAttitude <: AbstractAttitude
+    yaw::SVector{2, Float64} = SVector(0.0,0.0)
+    pitch::SVector{2, Float64} = SVector(0.0,0.0)
+    roll::SVector{2, Float64} = SVector(0.0,0.0)
+    yaw_vel_std::Float64
+    pitch_vel_std::Float64
+    roll_vel_std::Float64
+    pitch_limit::Float64
+    roll_limit::Float64
+end
+
+@inline function propagate(attitude::RandomWalkAttitude, Δt, rng)
+    P = get_process(Order(2), Δt)
+    C = cholesky(get_process_covariance(Order(2), Δt)).L
+    pitch_limit = attitude.pitch_limit
+    roll_limit = attitude.roll_limit
+    next_yaw = P * attitude.yaw + C * randn(rng, SVector{2,Float64}) * attitude.yaw_vel_std
+    next_pitch = P * attitude.pitch + C * randn(rng, SVector{2,Float64}) * attitude.pitch_vel_std
+    next_roll = P * attitude.roll + C * randn(rng, SVector{2,Float64}) * attitude.roll_vel_std
+    bounded_next_pitch = next_pitch[1] > pitch_limit || next_pitch[1] < -pitch_limit ? SVector(sign(next_pitch[1]) * pitch_limit, 0) : next_pitch
+    bounded_next_roll = next_roll[1] > roll_limit || next_roll[1] < -roll_limit ? SVector(sign(next_roll[1]) * roll_limit, 0) : next_roll
+    RandomWalkAttitude(next_yaw, bounded_next_pitch, bounded_next_roll, attitude.yaw_vel_std, attitude.pitch_vel_std, attitude.roll_vel_std, pitch_limit, roll_limit)
+end
+
+function get_attitude(attitude::RandomWalkAttitude)
+    RotXYZ(attitude.roll[1], attitude.pitch[1], attitude.yaw[1])
+end
+
 struct NoisyStaticAttitude <: AbstractAttitude
     attitude::RotXYZ{Float64}
     base_attitude::RotXYZ{Float64}

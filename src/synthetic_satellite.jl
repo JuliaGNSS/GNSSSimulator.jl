@@ -2,9 +2,15 @@ abstract type AbstractSyntheticSatellite{T} <: AbstractEmitter{T} end
 
 struct SyntheticSatellite{
     T <: AbstractFloat,
-    CS <: ConstantDopplerSatellite{<: AbstractGNSS, T}
+    CS <: ConstantDopplerSatellite{<: AbstractGNSS, T},
+    S <: Union{Nothing, <:AbstractVector}
 } <: AbstractSyntheticSatellite{T}
     sat::CS
+    steer_vec::S
+end
+
+function SyntheticSatellite(sat::ConstantDopplerSatellite{<:AbstractGNSS, T}) where T <: AbstractFloat
+    SyntheticSatellite(sat, nothing)
 end
 
 function gen_signal!(
@@ -41,26 +47,34 @@ function propagate(
             sample_frequency,
             n0,
             rng
-        )
+        ),
+        synthetic_sat.steer_vec
     )
 end
 
 function get_steer_vec(
     manifold::AbstractManifold{N},
-    emitter::SyntheticSatellite{T},
+    emitter::SyntheticSatellite{T, CS, Nothing},
     attitude
-) where {N, T <: AbstractFloat}
+) where {N, T <: AbstractFloat, CS <: ConstantDopplerSatellite}
     ones(SVector{N, T})
 end
 
 function get_steer_vec(
     manifold::IdealManifold{1},
-    emitter::SyntheticSatellite{T},
+    emitter::SyntheticSatellite{T, CS, Nothing},
     attitude
-) where T <: AbstractFloat
+) where {T <: AbstractFloat, CS <: ConstantDopplerSatellite}
     one(T)
 end
 
+function get_steer_vec(
+    manifold::AbstractManifold,
+    emitter::SyntheticSatellite,
+    attitude
+)
+    emitter.steer_vec
+end
 
 @inline get_doa(ss::SyntheticSatellite) = get_doa(ss.sat)
 @inline get_existence(ss::SyntheticSatellite) = get_existence(ss.sat)

@@ -24,6 +24,7 @@ module GNSSSimulator
 export
     NoisyStaticAttitude,
     DynamicAttitude,
+    RandomWalkAttitude,
     NoisyDynamicAttitude,
     LinearDynamicAttitude,
     NoisyLinearDynamicAttitude,
@@ -34,6 +35,7 @@ export
     ConstantDopplerStructuralInterference,
     SyntheticSatellite,
     AsymptoticGainPhaseMismCrosstalk,
+    RandomWalkGainPhaseMismCrosstalk,
     CWJammer,
     NoiseJammer,
     DynamicJNR,
@@ -70,6 +72,7 @@ export
         index < size(values, 1) ? values[index] : values[end]
     end
 
+    include("covdraw.jl")
     include("amplitude.jl")
     include("carrier.jl")
     include("attitude.jl")
