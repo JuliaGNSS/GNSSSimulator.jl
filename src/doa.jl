@@ -79,3 +79,24 @@ end
 function get_doa(doa::LinearDynamicDOA)
     doa.doa
 end
+
+@with_kw struct RandomWalkDOA <: AbstractDOA
+    azimuth::SVector{2, Float64} = SVector(0.0,0.0)
+    elevation::SVector{2, Float64} = SVector(0.0,0.0)
+    azimuth_vel_std::Float64
+    elevation_vel_std::Float64
+    elevation_limit::Float64
+end
+
+@inline function propagate(doa::RandomWalkDOA, Δt, rng)
+    P = get_process(Order(2), Δt / s)
+    C = cholesky(get_process_covariance(Order(2), Δt / s)).L
+    elevation_limit = doa.elevation_limit
+    next_azimuth = P * doa.azimuth + C * randn(rng, SVector{2,Float64}) * doa.azimuth_vel_std
+    next_elevation = soft_bound(P * doa.elevation , C * randn(rng, SVector{2,Float64}) * doa.elevation_vel_std, π / 2, elevation_limit)   
+    RandomWalkDOA(next_azimuth, next_elevation, doa.azimuth_vel_std, doa.elevation_vel_std, elevation_limit)
+end
+
+function get_doa(doa::RandomWalkDOA)
+    Spherical(1.0, doa.azimuth[1], doa.elevation[1])
+end

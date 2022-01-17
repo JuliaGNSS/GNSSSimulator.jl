@@ -38,3 +38,11 @@ function get_process_covariance(::Order{3}, T)
         T^3/6 T^2/2 T
     ]
 end
+
+function soft_bound(value, noise, upper_bound, lower_bound, relative_soft_bounding = 0.2)
+    value += value[1] > upper_bound * (1 - sign(upper_bound) * relative_soft_bounding) && value[end] > 0 && noise[end] > 0 ?
+        SVector(noise[1], -noise[end]) : noise
+    value += value[1] < lower_bound * (1 + sign(lower_bound) * relative_soft_bounding) && value[end] < 0 && noise[end] < 0 ?
+        SVector(noise[1], -noise[end]) : noise
+    value
+end

@@ -30,6 +30,7 @@ export
     NoisyLinearDynamicAttitude,
     DynamicDOA,
     LinearDynamicDOA,
+    RandomWalkDOA,
     DynamicExistence,
     ConstantDopplerSatellite,
     ConstantDopplerStructuralInterference,

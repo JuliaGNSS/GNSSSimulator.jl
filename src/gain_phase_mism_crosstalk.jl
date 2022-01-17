@@ -60,44 +60,61 @@ function normalize_gain_phase_mism_and_crosstalk(gain_and_phase_mism_and_crossta
     gain_and_phase_mism_and_crosstalk ./ gain_and_phase_mism_and_crosstalk_norm
 end
 
-struct RandomWalkGainPhaseMismCrosstalk{N, G <: SMatrix, C <: SMatrix}
-    gain_phase::G
-    crosstalk::C
-    gain_phase_vel_std::Float64
-    crosstalk_vel_std::Float64
-    crosstalk_ampl::Float64
+struct RandomWalkGainPhaseMismCrosstalk{
+    N,
+    T <: AbstractFloat,
+    P <: SMatrix,
+    G <: SVector,
+    CP <: SMatrix,
+    CA <: SVector
+} <: AbstractGainPhaseMismCrosstalk{T}
+    phase_mism::P
+    gain_mism::G
+    crosstalk_phase::CP
+    crosstalk_ampl::CA
+    phase_mism_vel_std::Float64
+    crosstalk_phase_vel_std::Float64
 end
 
-function RandomWalkGainPhaseMismCrosstalk(N; gain_phase_vel_std, crosstalk_vel_std, crosstalk_ampl)
-    gain_phase = zeros(SMatrix{2, N - 1, Float64})
-    crosstalk = zeros(SMatrix{2, N^2 - N, Float64})
-    RandomWalkGainPhaseMismCrosstalk{N, typeof(gain_phase), typeof(crosstalk)}(
-        gain_phase,
-        crosstalk,
-        gain_phase_vel_std,
-        crosstalk_vel_std,
-        crosstalk_ampl
+function RandomWalkGainPhaseMismCrosstalk(
+    N,
+    T = Float64;
+    gain_mism_std = 0.1,
+    relative_crosstalk_ampl_std = 0.1,
+    phase_mism_vel_std,
+    crosstalk_phase_vel_std,
+    crosstalk_ampl, 
+)
+    gain_mism = ones(SVector{N, T}) + randn(SVector{N, T}) * gain_mism_std
+    phase_mism = zeros(SMatrix{2, N, T})
+    crosstalk_phase = zeros(SMatrix{2, N^2 - N, T})
+    crosstalk_ampl = (ones(SVector{N^2 - N, T}) + randn(SVector{N^2 - N, T}) * relative_crosstalk_ampl_std) * crosstalk_ampl
+    RandomWalkGainPhaseMismCrosstalk{N, T, typeof(phase_mism), typeof(gain_mism), typeof(crosstalk_phase), typeof(crosstalk_ampl)}(
+        phase_mism,
+        gain_mism,
+        crosstalk_phase,
+        crosstalk_ampl,
+        phase_mism_vel_std,
+        crosstalk_phase_vel_std,
     )
 end
 
-@inline function propagate(gpmc::RandomWalkGainPhaseMismCrosstalk{N}, Δt, rng) where N
-    P = get_process(Order(2), Δt)
-    C = cholesky(get_process_covariance(Order(2), Δt)).L
-    next_gain_phase = P * gpmc.gain_phase + C * randn(rng, SMatrix{2, N - 1, Float64}) * gpmc.gain_phase_vel_std
-    next_crosstalk = P * gpmc.crosstalk + C * randn(rng, SMatrix{2, N^2 - N, Float64}) * gpmc.crosstalk_vel_std
-    RandomWalkGainPhaseMismCrosstalk{N, typeof(next_gain_phase), typeof(next_crosstalk)}(next_gain_phase, next_crosstalk, gpmc.gain_phase_vel_std, gpmc.crosstalk_vel_std, gpmc.crosstalk_ampl)
+@inline function propagate(gpmc::RandomWalkGainPhaseMismCrosstalk{N, T, P, G, CP, CA}, Δt, rng) where {N, T, P, G, CP, CA}
+    process = get_process(Order(2), upreferred(Δt / s))
+    C = cholesky(get_process_covariance(Order(2), upreferred(Δt / s))).L
+    next_phase_mism = process * gpmc.phase_mism + C * randn(rng, SMatrix{2, N, T}) * gpmc.phase_mism_vel_std
+    next_crosstalk_phase = process * gpmc.crosstalk_phase + C * randn(rng, SMatrix{2, N^2 - N, T}) * gpmc.crosstalk_phase_vel_std
+    RandomWalkGainPhaseMismCrosstalk{N, T, P, G, CP, CA}(next_phase_mism, gpmc.gain_mism, next_crosstalk_phase, gpmc.crosstalk_ampl, gpmc.phase_mism_vel_std, gpmc.crosstalk_phase_vel_std)
 end
 
-@inline function get_gain_phase_mism_crosstalk(gpmc::RandomWalkGainPhaseMismCrosstalk{N}) where N
-    C = MMatrix{N,N,ComplexF64}(undef)
+@inline function get_gain_phase_mism_crosstalk(gpmc::RandomWalkGainPhaseMismCrosstalk{N, T}) where {N, T}
+    C = MMatrix{N,N,Complex{T}}(undef)
     crosstalk_idx = 1
     for i = 1:N, j = 1:N
-        if i == j == N
-            C[i,i] = complex(1.0, 0.0)
-        elseif i == j
-            C[i,i] = cis(gpmc.gain_phase[1,i])
+        if i == j
+            C[i,i] = cis(gpmc.phase_mism[1, i]) * gpmc.gain_mism[i]
         else
-            C[i,j] = cis(gpmc.crosstalk[1,crosstalk_idx]) * gpmc.crosstalk_ampl
+            C[i,j] = cis(gpmc.crosstalk_phase[1, crosstalk_idx]) * gpmc.crosstalk_ampl[crosstalk_idx]
             crosstalk_idx += 1
         end
     end
