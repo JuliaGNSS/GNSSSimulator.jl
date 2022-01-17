@@ -12,16 +12,14 @@ abstract type AbstractAttitude end
 end
 
 @inline function propagate(attitude::RandomWalkAttitude, Δt, rng)
-    P = get_process(Order(2), Δt)
-    C = cholesky(get_process_covariance(Order(2), Δt)).L
+    P = get_process(Order(2), Δt / s)
+    C = cholesky(get_process_covariance(Order(2), Δt / s)).L
     pitch_limit = attitude.pitch_limit
     roll_limit = attitude.roll_limit
     next_yaw = P * attitude.yaw + C * randn(rng, SVector{2,Float64}) * attitude.yaw_vel_std
-    next_pitch = P * attitude.pitch + C * randn(rng, SVector{2,Float64}) * attitude.pitch_vel_std
-    next_roll = P * attitude.roll + C * randn(rng, SVector{2,Float64}) * attitude.roll_vel_std
-    bounded_next_pitch = next_pitch[1] > pitch_limit || next_pitch[1] < -pitch_limit ? SVector(sign(next_pitch[1]) * pitch_limit, 0) : next_pitch
-    bounded_next_roll = next_roll[1] > roll_limit || next_roll[1] < -roll_limit ? SVector(sign(next_roll[1]) * roll_limit, 0) : next_roll
-    RandomWalkAttitude(next_yaw, bounded_next_pitch, bounded_next_roll, attitude.yaw_vel_std, attitude.pitch_vel_std, attitude.roll_vel_std, pitch_limit, roll_limit)
+    next_pitch = soft_bound(P * attitude.pitch, C * randn(rng, SVector{2,Float64}) * attitude.pitch_vel_std, pitch_limit, -pitch_limit)
+    next_roll = soft_bound(P * attitude.roll, C * randn(rng, SVector{2,Float64}) * attitude.roll_vel_std, roll_limit, -roll_limit)
+    RandomWalkAttitude(next_yaw, next_pitch, next_roll, attitude.yaw_vel_std, attitude.pitch_vel_std, attitude.roll_vel_std, pitch_limit, roll_limit)
 end
 
 function get_attitude(attitude::RandomWalkAttitude)
